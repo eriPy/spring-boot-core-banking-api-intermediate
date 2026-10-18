@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.eripy.banking_system.dto.CreateAccountResponse;
 import com.eripy.banking_system.dto.CreateAccoutRequest;
+import com.eripy.banking_system.dto.SignInRequest;
 import com.eripy.banking_system.dto.SignUpRequest;
 import com.eripy.banking_system.entities.accounts.Account;
 import com.eripy.banking_system.entities.accounts.AccountsType;
@@ -226,6 +227,25 @@ public class AuthService {
                 secretKey
             ),
             account.getId()
+        );
+    }
+
+    public String login(SignInRequest request) {
+        logger.info("Validating data");
+        if (!accountRepository.existsByEmail(request.email())) {
+            logger.warn("The email not found on database");
+            throw new FormatDataException("Invalid data");
+        }
+        List<Account> data = getterService.getInformation(request.email());
+        String password = data.get(0).getPassword();
+        if (!encoder.matches(request.password(), password)) {
+            logger.warn("The password not match");
+            throw new FormatDataException("Invalid data");
+        }
+        return jwtService.createJwt(
+            data.get(0).getId(), 
+            jwtExpiration, 
+            secretKey
         );
     }
 }

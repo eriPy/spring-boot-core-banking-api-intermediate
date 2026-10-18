@@ -13,7 +13,7 @@ public class RateLimitConfig {
             .builder()
             .addLimit(limit ->
                 limit.capacity(1)
-                .refillGreedy(1, Duration.ofMinutes(1))
+                .refillGreedy(1, Duration.ofSeconds(30))
             )
             .build();
     }

@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.eripy.banking_system.dto.CreateAccountResponse;
 import com.eripy.banking_system.dto.CreateAccoutRequest;
+import com.eripy.banking_system.dto.SignInRequest;
 import com.eripy.banking_system.dto.SignUpRequest;
 import com.eripy.banking_system.service.account.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,12 +37,21 @@ public class AuthController {
         return Map.of("res", "A verification email has been sent");
     }    
 
+    @Operation(summary = "Enter a email and a password to sign in and a JWT")
     @PostMapping("/sign-in")
-    public void signIn() {
-
+    public Map<String, Object> signIn(
+        @Valid 
+        @RequestBody 
+        SignInRequest request
+    ) {
+        String token = authService.login(request);
+        return Map.of(
+            "data", Map.of(
+            "token", token
+        ));
     }
 
-    @Operation(summary = "Use the data saved in sendEmailToken and create the account")
+    @Operation(summary = "Use the data saved in sendEmailToken and create the account and return a JWT")
     @PostMapping("/sign-up")
     public ResponseEntity<Map<String, Object>> singUp(
         @Valid 
@@ -58,5 +68,11 @@ public class AuthController {
                     "id", response.id()
                 )
             ));
+    }
+
+    @Operation(summary = "Confirm the password if user has various accounts")
+    @PostMapping("/password")
+    public void confirm() {
+
     }
 }

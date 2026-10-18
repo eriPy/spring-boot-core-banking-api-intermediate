@@ -23,13 +23,13 @@ public class WebConfig implements WebMvcConfigurer{
     public void addInterceptors(InterceptorRegistry registry) {
         registry   
             .addInterceptor(new RateLimitInterceptor(authConfig))
-            .addPathPatterns("/api/auth/send-verification-email");
+            .addPathPatterns("/api/auth/**");
 
         registry    
             .addInterceptor(new RateLimitInterceptor(transactionConfig))
             .addPathPatterns(
-                "/api/account",
-                "/api/transaction"
+                "/api/account/**",
+                "/api/transaction/**"
         );
     }
 }
