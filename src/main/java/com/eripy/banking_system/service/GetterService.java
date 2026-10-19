@@ -124,7 +124,7 @@ public class GetterService {
 
         } catch (RedisConnectionFailureException | RedisSystemException e) {
             logger.warn("Redis connection not found: " + e.getMessage());
-            return getTransactionType(type);
+            return getTransactionTypeFromDatabase(type);
         } catch (JacksonException e) {
             logger.warn("Data in Redis does not have a valid format: " + e.getMessage());
             return getTransactionTypeFromDatabase(type);
@@ -177,7 +177,7 @@ public class GetterService {
             String data = redis.opsForValue().get("excess-transactions-fee");
             if (data == null) {
                 logger.info("Data not found in Redis");
-                BigDecimal fee = getExcessTransactionFee(id);
+                BigDecimal fee = getExcessTransactionFeeFromDatabase(id);
                 logger.info("Search data on database");
                 saveToRedis("excess-transactions-fee", fee, Duration.ofHours(24));
                 logger.info("Data saved in Redis");

@@ -35,7 +35,7 @@ public class AccountService {
             throw new ResourceNotFoundException("Invalid token");
         }
         logger.info("Search the account");
-        Account account = getterService.getAccountInformationById(id);
+        Account account = getterService.getAccountFromDatabase(id);
         List<Account> information = getterService.getInformation(account.getEmail());
         return evaluateFormatService.getInformationFormat(information);
     }

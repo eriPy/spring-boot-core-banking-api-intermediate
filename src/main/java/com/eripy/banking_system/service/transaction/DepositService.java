@@ -37,17 +37,16 @@ public class DepositService {
     @Transactional 
     public void processDeposit(Long id, DepositRequest depositRequest) {
         logger.info("Search user");
-        logger.info("User found");
-        logger.info("Search account information");
         Account account = getterService.getAccountFromDatabase(id);
+        logger.info("User found");
         String act = account.getAccountType().getAccountType();
         if (act.equals("fixed_deposit_account")) {
             processToFixedDepositAccount(account);
         }
-        logger.info("Process the deposit");
+        logger.info("Process to the deposit");
         account.setBalance(account.getBalance().add(depositRequest.amount()));
         accountRepository.save(account);
-        logger.info("Deposit successful");
+        logger.info("Deposit successfu<l");
         Transaction transaction = new Transaction(
             account,
             getterService.getTransactionType("deposit"),
