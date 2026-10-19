@@ -35,11 +35,7 @@ public class AccountService {
             throw new ResourceNotFoundException("Invalid token");
         }
         logger.info("Search the account");
-        Account account = accountRepository.findById(id)
-            .orElseThrow(() -> {
-                logger.warn("Account not found");
-                throw new ResourceNotFoundException("Invalid token");
-            });
+        Account account = getterService.getAccountInformationById(id);
         List<Account> information = getterService.getInformation(account.getEmail());
         return evaluateFormatService.getInformationFormat(information);
     }

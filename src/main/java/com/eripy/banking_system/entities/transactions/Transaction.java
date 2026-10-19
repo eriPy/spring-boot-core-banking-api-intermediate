@@ -2,9 +2,7 @@ package com.eripy.banking_system.entities.transactions;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
 import com.eripy.banking_system.entities.accounts.Account;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -47,4 +45,14 @@ public class Transaction {
 
     @Column(name = "transaction_date", insertable = false, updatable = false)
     private LocalDateTime transactionDate;
+
+    public Transaction(
+        Account account,
+        TransactionType transactionType,
+        BigDecimal amount
+    ) {
+        this.account = account;
+        this.transactionType = transactionType;
+        this.amount = amount;
+    }
 }

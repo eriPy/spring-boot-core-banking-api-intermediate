@@ -40,4 +40,24 @@ public class EmailService {
             throw new MailDeliveryException("Cannot send the email");
         }
     }
+
+    public void sendEmail(String to, String subject, String text) {
+        logger.info("Preparing an email");
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setFrom("bank-account@gmail.com");  
+        msg.setTo(to);
+        msg.setSubject(subject);
+        msg.setText(text);
+        try {
+            logger.info("Sending email to user");
+            mailSender.send(msg);
+            logger.info("The email was send to user");
+        } catch (MailAuthenticationException e) {
+            logger.warn("Invalid credentials, info: " + e.getMessage());
+            throw new MailDeliveryException("Problem in the client service");
+        } catch (MailSendException e) {
+            logger.warn("Cannot send the email to: " + to + ", info: " + e.getMessage());
+            throw new MailDeliveryException("Cannot send the email");
+        }
+    }
 }
