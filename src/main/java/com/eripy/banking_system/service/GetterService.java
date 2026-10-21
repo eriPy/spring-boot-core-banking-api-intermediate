@@ -16,6 +16,7 @@ import com.eripy.banking_system.entities.accounts.FixedDepositAccount;
 import com.eripy.banking_system.entities.accounts.PersonType;
 import com.eripy.banking_system.entities.accounts.SavingsAccount;
 import com.eripy.banking_system.entities.security.Overdraft;
+import com.eripy.banking_system.entities.transactions.PaymentMethod;
 import com.eripy.banking_system.entities.transactions.TransactionType;
 import com.eripy.banking_system.exceptions.ResourceNotFoundException;
 import com.eripy.banking_system.repositories.accounts.AccountRepository;
@@ -25,6 +26,7 @@ import com.eripy.banking_system.repositories.accounts.FixedDepositAccountReposit
 import com.eripy.banking_system.repositories.accounts.PersonTypeRepository;
 import com.eripy.banking_system.repositories.accounts.SavingsAccountRepository;
 import com.eripy.banking_system.repositories.penalties.OverdraftRepository;
+import com.eripy.banking_system.repositories.transactions.PaymentMethodRepository;
 import com.eripy.banking_system.repositories.transactions.TransactionTypeRepository;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
@@ -42,6 +44,7 @@ public class GetterService {
     private final FixedDepositAccountRepository fixedDepositAccountRepository;
     private final CheckingAccountRepository checkingAccountRepository;
     private final OverdraftRepository overdraftRepository;
+    private final PaymentMethodRepository paymentMethodRepository;
     private static final Logger logger = LoggerFactory.getLogger(GetterService.class);
 
     public GetterService(
@@ -54,7 +57,8 @@ public class GetterService {
         SavingsAccountRepository savingsAccountRepository,
         FixedDepositAccountRepository fixedDepositAccountRepository,
         CheckingAccountRepository checkingAccountRepository,
-        OverdraftRepository overdraftRepository
+        OverdraftRepository overdraftRepository,
+        PaymentMethodRepository paymentMethodRepository
     ) {
         this.redis = redis;
         this.mapper = mapper;
@@ -66,6 +70,7 @@ public class GetterService {
         this.fixedDepositAccountRepository = fixedDepositAccountRepository;
         this.checkingAccountRepository = checkingAccountRepository;
         this.overdraftRepository = overdraftRepository;
+        this.paymentMethodRepository = paymentMethodRepository;
     }
 
     public <T> void saveToRedis(String key, T data, Duration duration) throws JacksonException {
@@ -271,7 +276,39 @@ public class GetterService {
         return overdraftRepository.findByPersonType(personType)
             .orElseThrow(() -> {
                 logger.warn("Overdraft type not found not found");
-                throw new ResourceNotFoundException("Account not found");
+                throw new ResourceNotFoundException("Overdraft not found");
             });
     }   
+
+    public PaymentMethod getPaymentMethod(String paymentMethod) {
+        try {
+            logger.info("Search Payment method in Redis");
+            String data = redis.opsForValue().get("payment-method" + paymentMethod);
+            if (data == null) {
+                logger.info("Payment method not found in Redis");
+                PaymentMethod pm = getPaymentMethodFromDatabase(paymentMethod);
+                logger.info("Payment method found on database");
+                saveToRedis("payment-method" + paymentMethod, pm, Duration.ofHours(12));
+                logger.info("Payment method saved in Redis");
+                return pm;
+            }
+            logger.info("Payment method found in Redis");
+            return mapper.readValue(data, new TypeReference<PaymentMethod>() {});
+
+        } catch (RedisConnectionFailureException | RedisSystemException e) {
+            logger.warn("Redis connection not found: " + e.getMessage());
+            return getPaymentMethodFromDatabase(paymentMethod);
+        } catch (JacksonException e) {
+            logger.warn("Data in Redis does not have a valid format: " + e.getMessage());
+            return getPaymentMethodFromDatabase(paymentMethod);
+        }
+    }
+
+    private PaymentMethod getPaymentMethodFromDatabase(String paymentMethod) {
+        return paymentMethodRepository.findByPaymentMethod(paymentMethod)
+            .orElseThrow(() -> {
+                logger.warn("Payment method not found not found");
+                throw new ResourceNotFoundException("Payment method not found");
+            });
+    }
 }

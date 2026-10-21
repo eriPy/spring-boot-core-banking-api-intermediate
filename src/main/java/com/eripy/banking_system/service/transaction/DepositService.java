@@ -7,9 +7,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.eripy.banking_system.dto.transactions.DepositRequest;
 import com.eripy.banking_system.entities.accounts.Account;
+import com.eripy.banking_system.entities.transactions.DepositTransaction;
+import com.eripy.banking_system.entities.transactions.PaymentMethod;
 import com.eripy.banking_system.entities.transactions.Transaction;
 import com.eripy.banking_system.exceptions.InconsistenceDataException;
 import com.eripy.banking_system.repositories.accounts.AccountRepository;
+import com.eripy.banking_system.repositories.transactions.DepositTransactionRepository;
 import com.eripy.banking_system.repositories.transactions.TransactionRepository;
 import com.eripy.banking_system.service.GetterService;
 import com.eripy.banking_system.service.account.EmailService;
@@ -20,22 +23,27 @@ public class DepositService {
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
     private final EmailService emailService;
+    private final DepositTransactionRepository depositTransactionRepository;
     private static final Logger logger = LoggerFactory.getLogger(DepositService.class);
     
     public DepositService(
         GetterService getterService,
         AccountRepository accountRepository,
         TransactionRepository transactionRepository,
-        EmailService emailService
+        EmailService emailService,
+        DepositTransactionRepository depositTransactionRepository
     ) {
         this.getterService = getterService;
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
         this.emailService = emailService;
+        this.depositTransactionRepository = depositTransactionRepository;
     }
 
     @Transactional 
     public void processDeposit(Long id, DepositRequest depositRequest) {
+        logger.info("Evaluating payment method");
+        PaymentMethod pm = getterService.getPaymentMethod(depositRequest.paymentMethod());
         logger.info("Search user");
         Account account = getterService.getAccountFromDatabase(id);
         logger.info("User found");
@@ -45,14 +53,15 @@ public class DepositService {
         }
         logger.info("Process to the deposit");
         account.setBalance(account.getBalance().add(depositRequest.amount()));
-        accountRepository.save(account);
-        logger.info("Deposit successfu<l");
         Transaction transaction = new Transaction(
             account,
             getterService.getTransactionType("deposit"),
             depositRequest.amount()
         );
         transactionRepository.save(transaction);
+        depositTransactionRepository.save(new DepositTransaction(transaction, pm));
+        accountRepository.save(account);
+        logger.info("Deposit successful");
         emailService.sendEmail(
             account.getEmail(), 
             "Deposit successful", 

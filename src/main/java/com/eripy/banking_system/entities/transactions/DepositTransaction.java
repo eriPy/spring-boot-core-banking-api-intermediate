@@ -42,4 +42,12 @@ public class DepositTransaction {
     @JoinColumn(name = "payment_method_id", updatable = false, nullable = false)
     @NotNull(message = "The payment method is required")
     private PaymentMethod paymentMethod;
+
+    public DepositTransaction(
+        Transaction transaction,
+        PaymentMethod paymentMethod
+    ) {
+        this.transaction = transaction; 
+        this.paymentMethod = paymentMethod;
+    }
 }

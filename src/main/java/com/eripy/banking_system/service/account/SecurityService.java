@@ -60,4 +60,8 @@ public class SecurityService {
             logger.info("The account has not incosistences");
         }
     }
+
+    public void evaluateSixDigitToken() {
+        
+    }
 }

@@ -12,8 +12,10 @@ import com.eripy.banking_system.entities.accounts.CheckingAccount;
 import com.eripy.banking_system.entities.accounts.FixedDepositAccount;
 import com.eripy.banking_system.entities.accounts.SavingsAccount;
 import com.eripy.banking_system.entities.security.Overdraft;
+import com.eripy.banking_system.entities.transactions.PaymentMethod;
 import com.eripy.banking_system.entities.transactions.Transaction;
 import com.eripy.banking_system.entities.transactions.TransactionType;
+import com.eripy.banking_system.entities.transactions.WithdrawalTransaction;
 import com.eripy.banking_system.exceptions.InvalidOperation;
 import com.eripy.banking_system.exceptions.InvalidQuantity;
 import com.eripy.banking_system.repositories.accounts.AccountRepository;
@@ -21,6 +23,7 @@ import com.eripy.banking_system.repositories.accounts.CheckingAccountRepository;
 import com.eripy.banking_system.repositories.accounts.FixedDepositAccountRepository;
 import com.eripy.banking_system.repositories.accounts.SavingsAccountRepository;
 import com.eripy.banking_system.repositories.transactions.TransactionRepository;
+import com.eripy.banking_system.repositories.transactions.WithdrawalTransactionRepository;
 import com.eripy.banking_system.service.GetterService;
 import com.eripy.banking_system.service.account.EmailService;
 
@@ -33,6 +36,7 @@ public class WithdrawalService {
     private final AccountRepository accountRepository;
     private final FixedDepositAccountRepository fixedDepositAccountRepository;
     private final CheckingAccountRepository checkingAccountRepository;
+    private final WithdrawalTransactionRepository withdrawalTransactionRepository;
     private static final Logger logger = LoggerFactory.getLogger(WithdrawalService.class);
 
     public WithdrawalService(
@@ -42,7 +46,8 @@ public class WithdrawalService {
         SavingsAccountRepository savingsAccountRepository,
         AccountRepository accountRepository,
         FixedDepositAccountRepository fixedDepositAccountRepository,
-        CheckingAccountRepository checkingAccountRepository
+        CheckingAccountRepository checkingAccountRepository,
+        WithdrawalTransactionRepository withdrawalTransactionRepository
     ) {
         this.getterService = getterService;
         this.emailService = emailService;
@@ -51,10 +56,13 @@ public class WithdrawalService {
         this.accountRepository = accountRepository;
         this.fixedDepositAccountRepository = fixedDepositAccountRepository;
         this.checkingAccountRepository = checkingAccountRepository;
+        this.withdrawalTransactionRepository = withdrawalTransactionRepository;
     }
 
     @Transactional 
     public void processWithdrawal(Long id, WithdrawalRequest request) {
+        logger.info("Evaluating the payment method");
+        PaymentMethod pm = getterService.getPaymentMethod(request.paymentMethod());
         logger.info("Search the user");
         Account account = getterService.getAccountFromDatabase(id);
         String act = account.getAccountType().getAccountType();
@@ -73,12 +81,10 @@ public class WithdrawalService {
                 processToChekingAccount(account, request.amount());
                 break;
         }
+        Transaction transaction = new Transaction(account, tt, request.amount());
+        transactionRepository.save(transaction);
+        withdrawalTransactionRepository.save(new WithdrawalTransaction(transaction, pm));
         accountRepository.save(account);
-        transactionRepository.save(new Transaction(
-            account,
-            tt,
-            request.amount()
-        ));
         emailService.sendEmail(
             account.getEmail(),
             "Withdrawal successful",

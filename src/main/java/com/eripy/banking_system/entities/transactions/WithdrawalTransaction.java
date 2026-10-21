@@ -1,7 +1,6 @@
 package com.eripy.banking_system.entities.transactions;
 
 import java.math.BigDecimal;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -43,4 +42,12 @@ public class WithdrawalTransaction {
     @JoinColumn(name = "payment_method_id", updatable = false, nullable = false)
     @NotNull(message = "The payment method is required")
     private PaymentMethod paymentMethod;
+
+    public WithdrawalTransaction(
+        Transaction transaction,
+        PaymentMethod paymentMethod
+    ) {
+        this.transaction = transaction;
+        this.paymentMethod = paymentMethod;
+    }
 }
