@@ -40,7 +40,7 @@ public class OperationToken {
     private String token;
 
     @Column(name = "is_used", insertable = false)
-    private boolean isUsed;
+    private Boolean isUsed;
 
     @Column(name = "create_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;

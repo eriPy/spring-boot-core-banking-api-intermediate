@@ -64,6 +64,8 @@ public class TransactionController {
     @PostMapping("/withdrawal")
     public ResponseEntity<Map<String, String>> withdrawal(
         Authentication authentication,
+        @Valid 
+        @RequestBody
         WithdrawalRequest request
     ) {
 

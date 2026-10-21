@@ -25,11 +25,10 @@ public class WebConfig implements WebMvcConfigurer{
             .addInterceptor(new RateLimitInterceptor(authConfig))
             .addPathPatterns("/api/auth/**");
 
-        registry    
+        registry
             .addInterceptor(new RateLimitInterceptor(transactionConfig))
             .addPathPatterns(
-                "/api/account/**",
-                "/api/transaction/**"
+                "/api/account/token"
         );
     }
 }

@@ -10,7 +10,13 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice 
 public class GlobalExceptionHandler {
-    @ExceptionHandler({FormatDataException.class, InvalidQuantity.class})
+    @ExceptionHandler({
+        FormatDataException.class, 
+        InvalidQuantity.class, 
+        InvalidOperation.class,
+        InvalidDateException.class,
+        InconsistenceDataException.class
+    })
     public ResponseEntity<Map<String, String>> handleInvalidaFormat(
         Exception e
     ) {
