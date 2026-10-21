@@ -1,4 +1,14 @@
-TRUNCATE TABLE token_types RESTART IDENTITY;
+ALTER TABLE IF EXISTS token_types
+    DROP CONSTRAINT token_types_token_type_check;
+
+ALTER TABLE IF EXISTS operation_tokens
+    DROP CONSTRAINT operation_tokens_token_type_id_fkey,
+    ADD CONSTRAINT operation_tokens_token_type_id_fkey
+    FOREIGN KEY (token_type_id)
+    REFERENCES token_types(id)
+    ON DELETE CASCADE;
+
+TRUNCATE TABLE token_types RESTART IDENTITY CASCADE;
 
 INSERT INTO token_types (token_type)
 VALUES ('deposit'),
@@ -11,7 +21,7 @@ VALUES ('deposit'),
 
 CREATE TABLE IF NOT EXISTS overdrafts (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    person_types_id BIGINT  
+    person_type_id BIGINT  
         NOT NULL
         REFERENCES person_types(id),
     overdraft_value NUMERIC(19, 4)
@@ -51,7 +61,8 @@ BEGIN
             NEW.id,
             (SELECT o.overdraft_value
             FROM overdrafts o
-            WHERE o.overdraft_for = p_t)
+            JOIN person_types pt ON pt.id = o.person_type_id
+            WHERE pt.person_type = p_t)
         )
         ON CONFLICT (account_id)
         DO UPDATE SET overdraft_limit = EXCLUDED.overdraft_limit;

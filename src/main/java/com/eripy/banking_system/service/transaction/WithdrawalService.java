@@ -90,10 +90,8 @@ public class WithdrawalService {
         logger.info("Search fixed deposit account");
         FixedDepositAccount fda = getterService.getFixedDepositAccountFromDatabase(account.getId());
         BigDecimal charge = fda.getInterestReceivable();
-        BigDecimal withdrawalAmount = new BigDecimal("0");
-        withdrawalAmount.add(account.getBalance());
-        withdrawalAmount.add(charge);
-        boolean isNotTime = fda.getMaturiyDate().isBefore(LocalDateTime.now());
+        BigDecimal withdrawalAmount = getBigDecimalReferences(account.getBalance()).add(charge);
+        boolean isNotTime = fda.getMaturiyDate().isAfter(LocalDateTime.now());
         boolean is0 = charge.compareTo(BigDecimal.ZERO) == 0;
         if (is0 || isNotTime) {
             String msg = !isNotTime ? 
@@ -130,9 +128,7 @@ public class WithdrawalService {
         SavingsAccount sa = getterService.getSavingsAccountFromDatabase(account.getId());
         if (sa.getTransactionsWithoutFee() == 0) { 
             logger.info("Validate the balance available");
-            BigDecimal reference = new BigDecimal("0");
-            reference.add(amount);
-            reference.add(sa.getExcessTransactionFee());
+            BigDecimal reference = getBigDecimalReferences(amount).add(sa.getExcessTransactionFee());
             if (account.getBalance().compareTo(reference) < 0) {
                 logger.warn("Insufficient balance");
                 throw new InvalidQuantity("Invalid data");
@@ -179,19 +175,15 @@ public class WithdrawalService {
         if (account.getBalance().compareTo(amount) < 0) {
             logger.info("The balace is insufficient");
             logger.info("Evaluate if the balance with the overdraft is sufficient");
-            BigDecimal reference = getBigDecimalReferences(account.getBalance());
-            reference.add(ca.getOverdraftLimit());
+            BigDecimal reference = getBigDecimalReferences(account.getBalance()).add(ca.getOverdraftLimit());
             if (reference.compareTo(amount) < 0) {
                 logger.warn("Insufficiet overdraft to process the withdrawal");
                 throw new InvalidQuantity("Invalid data");
             }
             logger.info("Getting the new Overdraft");
-            BigDecimal newLimit = getBigDecimalReferences(reference);
-            newLimit.subtract(amount);
-            newLimit.subtract(account.getBalance());
+            BigDecimal newLimit = getBigDecimalReferences(reference).subtract(amount).subtract(account.getBalance());
             logger.info("Getting the overdraft to use");
-            BigDecimal used = getBigDecimalReferences(ca.getOverdraftLimit());
-            used.subtract(newLimit);
+            BigDecimal used = getBigDecimalReferences(ca.getOverdraftLimit()).subtract(newLimit);
             logger.info("Processing the new data account");
             ca.setOverdraftLimit(newLimit);
             ca.setOverdraftUsed(ca.getOverdraftUsed().add(used));
@@ -205,8 +197,7 @@ public class WithdrawalService {
     }
 
     private BigDecimal getBigDecimalReferences(BigDecimal sum) {
-        BigDecimal reference = new BigDecimal("0");
-        reference.add(sum);
+        BigDecimal reference = new BigDecimal("0").add(sum);
         return reference;
     }
 }

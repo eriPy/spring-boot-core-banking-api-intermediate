@@ -12,5 +12,7 @@ public record WithdrawalRequest(
     BigDecimal amount,
     @NotBlank(message = "The token is required")
     @Size(min = 6, max = 6, message = "The token must has 6 characters long")
-    String token
+    String token,
+    @NotBlank 
+    String paymentMethod
 ) {}
