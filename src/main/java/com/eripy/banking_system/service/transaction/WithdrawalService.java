@@ -26,6 +26,7 @@ import com.eripy.banking_system.repositories.transactions.TransactionRepository;
 import com.eripy.banking_system.repositories.transactions.WithdrawalTransactionRepository;
 import com.eripy.banking_system.service.GetterService;
 import com.eripy.banking_system.service.account.EmailService;
+import com.eripy.banking_system.service.account.SecurityService;
 
 @Service 
 public class WithdrawalService {
@@ -37,6 +38,7 @@ public class WithdrawalService {
     private final FixedDepositAccountRepository fixedDepositAccountRepository;
     private final CheckingAccountRepository checkingAccountRepository;
     private final WithdrawalTransactionRepository withdrawalTransactionRepository;
+    private final SecurityService securityService;
     private static final Logger logger = LoggerFactory.getLogger(WithdrawalService.class);
 
     public WithdrawalService(
@@ -47,7 +49,8 @@ public class WithdrawalService {
         AccountRepository accountRepository,
         FixedDepositAccountRepository fixedDepositAccountRepository,
         CheckingAccountRepository checkingAccountRepository,
-        WithdrawalTransactionRepository withdrawalTransactionRepository
+        WithdrawalTransactionRepository withdrawalTransactionRepository,
+        SecurityService securityService
     ) {
         this.getterService = getterService;
         this.emailService = emailService;
@@ -57,6 +60,7 @@ public class WithdrawalService {
         this.fixedDepositAccountRepository = fixedDepositAccountRepository;
         this.checkingAccountRepository = checkingAccountRepository;
         this.withdrawalTransactionRepository = withdrawalTransactionRepository;
+        this.securityService = securityService;
     }
 
     @Transactional 
@@ -65,6 +69,7 @@ public class WithdrawalService {
         PaymentMethod pm = getterService.getPaymentMethod(request.paymentMethod());
         logger.info("Search the user");
         Account account = getterService.getAccountFromDatabase(id);
+        securityService.evaluateStatus(account);
         String act = account.getAccountType().getAccountType();
         TransactionType tt = getterService.getTransactionType("withdrawal");
         switch (act) {

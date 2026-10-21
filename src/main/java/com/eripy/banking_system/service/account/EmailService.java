@@ -7,7 +7,6 @@ import org.springframework.mail.MailSendException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
-
 import com.eripy.banking_system.exceptions.MailDeliveryException;
 
 @Service 

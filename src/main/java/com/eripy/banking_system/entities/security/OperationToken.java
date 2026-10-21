@@ -49,4 +49,14 @@ public class OperationToken {
     @JoinColumn(name = "token_type_id", updatable = false, nullable = false)
     @NotNull(message = "The token type is required")
     private TokenType tokenType;
+
+    public OperationToken(
+        Account account,
+        String token,
+        TokenType tokenType
+    ) {
+        this.account = account;
+        this.token = token;
+        this.tokenType = tokenType;
+    }
 }

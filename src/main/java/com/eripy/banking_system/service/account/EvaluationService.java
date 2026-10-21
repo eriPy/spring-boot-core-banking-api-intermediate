@@ -69,4 +69,16 @@ public class EvaluationService {
             logger.warn("The account card already exists");
         }
     }
+
+    public String createToken() {
+        logger.info("Generating token");
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 6; i++) {
+            int index = random.nextInt(chars.length());
+            sb.append(chars.charAt(index));
+        }
+        logger.info("Token was create");
+        return sb.toString();
+    }
 }

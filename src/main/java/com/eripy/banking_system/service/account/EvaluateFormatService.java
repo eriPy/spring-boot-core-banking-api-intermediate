@@ -5,9 +5,8 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
-import com.eripy.banking_system.dto.AccountGeneral;
-import com.eripy.banking_system.dto.AccountInformationResponse;
+import com.eripy.banking_system.dto.account.AccountGeneral;
+import com.eripy.banking_system.dto.account.AccountInformationResponse;
 import com.eripy.banking_system.entities.accounts.Account;
 import com.eripy.banking_system.entities.accounts.AccountsType;
 import com.eripy.banking_system.entities.accounts.PersonType;

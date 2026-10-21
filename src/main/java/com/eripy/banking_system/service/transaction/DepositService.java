@@ -16,6 +16,7 @@ import com.eripy.banking_system.repositories.transactions.DepositTransactionRepo
 import com.eripy.banking_system.repositories.transactions.TransactionRepository;
 import com.eripy.banking_system.service.GetterService;
 import com.eripy.banking_system.service.account.EmailService;
+import com.eripy.banking_system.service.account.SecurityService;
 
 @Service 
 public class DepositService {
@@ -24,6 +25,7 @@ public class DepositService {
     private final TransactionRepository transactionRepository;
     private final EmailService emailService;
     private final DepositTransactionRepository depositTransactionRepository;
+    private final SecurityService securityService;
     private static final Logger logger = LoggerFactory.getLogger(DepositService.class);
     
     public DepositService(
@@ -31,13 +33,15 @@ public class DepositService {
         AccountRepository accountRepository,
         TransactionRepository transactionRepository,
         EmailService emailService,
-        DepositTransactionRepository depositTransactionRepository
+        DepositTransactionRepository depositTransactionRepository,
+        SecurityService securityService
     ) {
         this.getterService = getterService;
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
         this.emailService = emailService;
         this.depositTransactionRepository = depositTransactionRepository;
+        this.securityService = securityService;
     }
 
     @Transactional 
@@ -47,6 +51,8 @@ public class DepositService {
         logger.info("Search user");
         Account account = getterService.getAccountFromDatabase(id);
         logger.info("User found");
+        logger.info("Evaluating the account status");
+        securityService.evaluateStatus(account);
         String act = account.getAccountType().getAccountType();
         if (act.equals("fixed_deposit_account")) {
             processToFixedDepositAccount(account);

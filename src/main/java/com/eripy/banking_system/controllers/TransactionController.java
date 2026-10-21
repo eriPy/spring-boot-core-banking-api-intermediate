@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.eripy.banking_system.dto.transactions.DepositRequest;
 import com.eripy.banking_system.dto.transactions.WithdrawalRequest;
-import com.eripy.banking_system.service.account.SecurityService;
+import com.eripy.banking_system.service.account.SixDigitTokenService;
 import com.eripy.banking_system.service.transaction.DepositService;
 import com.eripy.banking_system.service.transaction.WithdrawalService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,16 +23,16 @@ import jakarta.validation.Valid;
 public class TransactionController {
     private final DepositService depositService;
     private final WithdrawalService withdrawalService;
-    private final SecurityService securityService;
+    private final SixDigitTokenService sixDigitTokenService;
 
     public TransactionController(
         DepositService depositService,
         WithdrawalService withdrawalService,
-        SecurityService securityService
+        SixDigitTokenService sixDigitTokenService
     ) {
         this.depositService = depositService;
         this.withdrawalService = withdrawalService;
-        this.securityService = securityService;
+        this.sixDigitTokenService = sixDigitTokenService;
     }
 
     @Operation(summary = """
@@ -48,7 +48,7 @@ public class TransactionController {
         DepositRequest request
     ) {
         Long id = Long.parseLong(authentication.getName());
-        securityService.evaluateSixDigitToken();
+        sixDigitTokenService.evaluateSixDigitToken(request.token(), id, "deposit");
         depositService.processDeposit(id, request);
         return ResponseEntity
             .status(HttpStatus.CREATED)
@@ -68,6 +68,7 @@ public class TransactionController {
     ) {
 
         Long id = Long.parseLong(authentication.getName());
+        sixDigitTokenService.evaluateSixDigitToken(request.token(), id, "withdrawal");
         withdrawalService.processWithdrawal(id, request);
         return ResponseEntity
             .status(HttpStatus.CREATED)
@@ -80,6 +81,6 @@ public class TransactionController {
         Authentication authentication
     ) {
         Long id = Long.parseLong(authentication.getName());
-        securityService.evaluateSixDigitToken();
+        sixDigitTokenService.evaluateSixDigitToken(null, id, "transfer");
     }
 }

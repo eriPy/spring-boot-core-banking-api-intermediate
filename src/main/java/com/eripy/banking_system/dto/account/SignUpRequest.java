@@ -1,4 +1,4 @@
-package com.eripy.banking_system.dto;
+package com.eripy.banking_system.dto.account;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

@@ -3,9 +3,12 @@ package com.eripy.banking_system.service.account;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import com.eripy.banking_system.dto.SignUpRequest;
+import com.eripy.banking_system.dto.account.SignUpRequest;
+import com.eripy.banking_system.entities.accounts.Account;
+import com.eripy.banking_system.entities.accounts.AccountStatus;
 import com.eripy.banking_system.entities.accounts.AccountsType;
 import com.eripy.banking_system.entities.accounts.PersonType;
+import com.eripy.banking_system.exceptions.FormatDataException;
 import com.eripy.banking_system.exceptions.InconsistenceDataException;
 import com.eripy.banking_system.repositories.accounts.AccountRepository;
 
@@ -61,7 +64,10 @@ public class SecurityService {
         }
     }
 
-    public void evaluateSixDigitToken() {
-        
+    public void evaluateStatus(Account account) {
+        if (account.getAccountStatus() != AccountStatus.active) {
+            logger.info("The account cannot make transactions");
+            throw new FormatDataException("Invalid data");
+        }
     }
 }
