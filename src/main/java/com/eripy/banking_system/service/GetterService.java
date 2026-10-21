@@ -11,14 +11,20 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import com.eripy.banking_system.entities.accounts.Account;
 import com.eripy.banking_system.entities.accounts.AccountsType;
+import com.eripy.banking_system.entities.accounts.CheckingAccount;
+import com.eripy.banking_system.entities.accounts.FixedDepositAccount;
 import com.eripy.banking_system.entities.accounts.PersonType;
 import com.eripy.banking_system.entities.accounts.SavingsAccount;
+import com.eripy.banking_system.entities.security.Overdraft;
 import com.eripy.banking_system.entities.transactions.TransactionType;
 import com.eripy.banking_system.exceptions.ResourceNotFoundException;
 import com.eripy.banking_system.repositories.accounts.AccountRepository;
 import com.eripy.banking_system.repositories.accounts.AccountsTypeRepository;
+import com.eripy.banking_system.repositories.accounts.CheckingAccountRepository;
+import com.eripy.banking_system.repositories.accounts.FixedDepositAccountRepository;
 import com.eripy.banking_system.repositories.accounts.PersonTypeRepository;
 import com.eripy.banking_system.repositories.accounts.SavingsAccountRepository;
+import com.eripy.banking_system.repositories.penalties.OverdraftRepository;
 import com.eripy.banking_system.repositories.transactions.TransactionTypeRepository;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
@@ -33,6 +39,9 @@ public class GetterService {
     private final AccountRepository accountRepository;
     private final TransactionTypeRepository transactionTypeRepository;
     private final SavingsAccountRepository savingsAccountRepository;
+    private final FixedDepositAccountRepository fixedDepositAccountRepository;
+    private final CheckingAccountRepository checkingAccountRepository;
+    private final OverdraftRepository overdraftRepository;
     private static final Logger logger = LoggerFactory.getLogger(GetterService.class);
 
     public GetterService(
@@ -42,7 +51,10 @@ public class GetterService {
         PersonTypeRepository personTypeRepository,
         AccountRepository accountRepository,
         TransactionTypeRepository transactionTypeRepository,
-        SavingsAccountRepository savingsAccountRepository
+        SavingsAccountRepository savingsAccountRepository,
+        FixedDepositAccountRepository fixedDepositAccountRepository,
+        CheckingAccountRepository checkingAccountRepository,
+        OverdraftRepository overdraftRepository
     ) {
         this.redis = redis;
         this.mapper = mapper;
@@ -51,6 +63,9 @@ public class GetterService {
         this.accountRepository = accountRepository;
         this.transactionTypeRepository = transactionTypeRepository;
         this.savingsAccountRepository = savingsAccountRepository;
+        this.fixedDepositAccountRepository = fixedDepositAccountRepository;
+        this.checkingAccountRepository = checkingAccountRepository;
+        this.overdraftRepository = overdraftRepository;
     }
 
     public <T> void saveToRedis(String key, T data, Duration duration) throws JacksonException {
@@ -171,6 +186,30 @@ public class GetterService {
             });
     }
 
+    public SavingsAccount getSavingsAccountFromDatabase(Long id) {
+        return savingsAccountRepository.findById(id)
+            .orElseThrow(() -> {
+                logger.warn("User not found");
+                throw new ResourceNotFoundException("Account not found");
+            });
+    }
+
+    public FixedDepositAccount getFixedDepositAccountFromDatabase(Long id) {
+        return fixedDepositAccountRepository.findById(id)
+            .orElseThrow(() -> {
+                logger.warn("User not found");
+                throw new ResourceNotFoundException("Account not found");
+            });
+    }
+
+    public CheckingAccount getCheckingAccountFromDatabase(Long id) {
+        return checkingAccountRepository.findById(id)
+            .orElseThrow(() -> {
+                logger.warn("User not found");
+                throw new ResourceNotFoundException("Account not found");
+            });
+    }
+
     public BigDecimal getExcessTransactionFee(Long id) {
         try {
             logger.info("Search account in Redis");
@@ -203,4 +242,36 @@ public class GetterService {
             });
         return sa.getExcessTransactionFee();
     }
+
+    public Overdraft getOverdraft(PersonType personType) {
+        try {
+            logger.info("Search overdraft in Redis");
+            String data = redis.opsForValue().get("overdraft-for-" + personType.getPersonType());
+            if (data == null) {
+                logger.info("Overdraft not found in Redis");
+                Overdraft overdraft = getOverdraftFromDatabase(personType);
+                logger.info("Overdraft found on database");
+                saveToRedis("overdraft-for-" + personType.getPersonType(), overdraft, Duration.ofHours(12));
+                logger.info("Overdraft saved in Redis");
+                return overdraft;
+            }
+            logger.info("Overdraft found in Redis");
+            return mapper.readValue(data, new TypeReference<Overdraft>() {});
+
+        } catch (RedisConnectionFailureException | RedisSystemException e) {
+            logger.warn("Redis connection not found: " + e.getMessage());
+            return getOverdraftFromDatabase(personType);
+        } catch (JacksonException e) {
+            logger.warn("Data in Redis does not have a valid format: " + e.getMessage());
+            return getOverdraftFromDatabase(personType);
+        }
+    }
+
+    private Overdraft getOverdraftFromDatabase(PersonType personType) {
+        return overdraftRepository.findByPersonType(personType)
+            .orElseThrow(() -> {
+                logger.warn("Overdraft type not found not found");
+                throw new ResourceNotFoundException("Account not found");
+            });
+    }   
 }

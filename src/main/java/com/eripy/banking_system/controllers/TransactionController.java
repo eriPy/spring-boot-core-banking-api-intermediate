@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.eripy.banking_system.dto.transactions.DepositRequest;
+import com.eripy.banking_system.dto.transactions.WithdrawalRequest;
 import com.eripy.banking_system.service.transaction.DepositService;
 import com.eripy.banking_system.service.transaction.WithdrawalService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -46,10 +47,11 @@ public class TransactionController {
 
     @PostMapping("/withdrawal")
     public ResponseEntity<Map<String, String>> withdrawal(
-        Authentication authentication
+        Authentication authentication,
+        WithdrawalRequest request
     ) {
         Long id = Long.parseLong(authentication.getName());
-        withdrawalService.processWithdrawal();
+        withdrawalService.processWithdrawal(id, request);
         return ResponseEntity
             .status(HttpStatus.CREATED)
             .body(Map.of("Withdrawal", "succesful")

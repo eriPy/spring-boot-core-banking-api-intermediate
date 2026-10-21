@@ -42,6 +42,9 @@ public class SavingsAccount {
     @DecimalMin(value = "0.00", message = "The interest receivable cannot be least than 0")
     private BigDecimal interestReceivable;
 
+    @Column(name = "transactions_without_fee", insertable = false)
+    private int transactionsWithoutFee;
+
     public SavingsAccount(Account account) {
         this.account = account;
     }
