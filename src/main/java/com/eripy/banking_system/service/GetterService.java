@@ -18,6 +18,7 @@ import com.eripy.banking_system.entities.accounts.FixedDepositAccount;
 import com.eripy.banking_system.entities.accounts.PersonType;
 import com.eripy.banking_system.entities.accounts.SavingsAccount;
 import com.eripy.banking_system.entities.security.Overdraft;
+import com.eripy.banking_system.entities.security.PenalizedReason;
 import com.eripy.banking_system.entities.security.TokenType;
 import com.eripy.banking_system.entities.transactions.PaymentMethod;
 import com.eripy.banking_system.entities.transactions.TransactionType;
@@ -29,6 +30,7 @@ import com.eripy.banking_system.repositories.accounts.FixedDepositAccountReposit
 import com.eripy.banking_system.repositories.accounts.PersonTypeRepository;
 import com.eripy.banking_system.repositories.accounts.SavingsAccountRepository;
 import com.eripy.banking_system.repositories.penalties.OverdraftRepository;
+import com.eripy.banking_system.repositories.penalties.PenalizedReasonRepository;
 import com.eripy.banking_system.repositories.penalties.TokenTypeRepository;
 import com.eripy.banking_system.repositories.transactions.PaymentMethodRepository;
 import com.eripy.banking_system.repositories.transactions.TransactionTypeRepository;
@@ -50,6 +52,7 @@ public class GetterService {
     private final OverdraftRepository overdraftRepository;
     private final PaymentMethodRepository paymentMethodRepository;
     private final TokenTypeRepository tokenTypeRepository;
+    private final PenalizedReasonRepository penalizedReasonRepository;
     private static final Logger logger = LoggerFactory.getLogger(GetterService.class);
 
     public GetterService(
@@ -64,7 +67,8 @@ public class GetterService {
         CheckingAccountRepository checkingAccountRepository,
         OverdraftRepository overdraftRepository,
         PaymentMethodRepository paymentMethodRepository,
-        TokenTypeRepository tokenTypeRepository
+        TokenTypeRepository tokenTypeRepository,
+        PenalizedReasonRepository penalizedReasonRepository
     ) {
         this.redis = redis;
         this.mapper = mapper;
@@ -78,6 +82,7 @@ public class GetterService {
         this.overdraftRepository = overdraftRepository;
         this.paymentMethodRepository = paymentMethodRepository;
         this.tokenTypeRepository = tokenTypeRepository;
+        this.penalizedReasonRepository = penalizedReasonRepository;
     }
 
     public <T> void saveToRedis(String key, T data, Duration duration) throws JacksonException {
@@ -119,6 +124,18 @@ public class GetterService {
                 throw new ResourceNotFoundException("Not found");});
     }
 
+    private PenalizedReason getPenalizedReasonFromDatabase(String reason) {
+        return getFromDatabase(() -> penalizedReasonRepository.findByReason(reason), "Reason");
+    }
+
+    public PenalizedReason getPenalizedReason(String reason) {
+        return getFromCache(
+            "penalized-reason-" + reason, 
+            "Reason", 
+            new TypeReference<PenalizedReason>() {}, 
+            () -> getPenalizedReasonFromDatabase(reason));
+    }
+
     public List<AccountsType> getAccountTypes() {
         return getFromCache(
             "account-types", 
@@ -136,10 +153,7 @@ public class GetterService {
     }
 
     private TransactionType getTransactionTypeFromDatabase(String type) {
-        return transactionTypeRepository.findByTransactionType(type)
-            .orElseThrow(() -> {
-                logger.warn("Data not found on database");
-                throw new ResourceNotFoundException("Not found");});
+        return getFromDatabase(() -> transactionTypeRepository.findByTransactionType(type), "Transaction");
     }
 
     public TransactionType getTransactionType(String type) {

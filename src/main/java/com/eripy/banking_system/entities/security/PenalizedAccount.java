@@ -42,4 +42,14 @@ public class PenalizedAccount {
     @JoinColumn(name = "reason_id", nullable = false, updatable = false)
     @NotNull(message = "The reason is required")
     private PenalizedReason reason;
+
+    public PenalizedAccount(
+        Account account,
+        LocalDateTime frozenUntil,
+        PenalizedReason reason
+    ) {
+        this.account = account;
+        this.frozenUntil = frozenUntil;
+        this.reason = reason;
+    }
 }
