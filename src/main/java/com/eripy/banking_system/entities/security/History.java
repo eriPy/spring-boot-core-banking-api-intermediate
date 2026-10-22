@@ -29,4 +29,10 @@ public class History {
     @JoinColumn(name = "account_id", insertable = false, updatable = false, unique = false)
     @NotNull(message = "The account references is required")
     private Account account;
+
+    public History(
+        Account account
+    ) {
+        this.account = account;
+    }
 }

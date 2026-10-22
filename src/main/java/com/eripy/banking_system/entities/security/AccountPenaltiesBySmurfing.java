@@ -28,17 +28,34 @@ public class AccountPenaltiesBySmurfing {
     private Long id;
 
     @OneToOne 
-    @JoinColumn(name = "history_id", insertable = false, unique = true, updatable = false)
+    @JoinColumn(name = "history_id", nullable = false, unique = true)
     @NotNull(message = "The history references is required")
     private History history;
 
-    @Column(name = "warnings", insertable = false, updatable = false)
+    @Column(name = "warnings", nullable = false)
     @Min(value = 0, message = "Warnings must be 1 or greater")
     @Max(value = 9, message = "Warnings cannot exceed 9")
     private int warnings;
 
-    @Column(name = "suspensions", insertable = false, updatable = false)
-    @Min(value = 0, message = "Suspensions must be 1 or greater")
-    @Max(value = 3, message = "Suspensions cannot exceed 2")
+    @Column(name = "suspensions", updatable = false)
+    @Min(value = 0, message = "Suspensions must be 0 or greater")
+    @Max(value = 2, message = "Suspensions cannot exceed 2")
     private int suspensions;
+
+    public AccountPenaltiesBySmurfing(
+        History history,
+        int warnings
+    ) {
+        this.history = history;
+        this.warnings = warnings;
+    }
+
+    public AccountPenaltiesBySmurfing(
+        History history,
+        int warnings,
+        int suspensions
+    ) {
+        this(history, warnings);
+        this.suspensions = suspensions;
+    }
 }

@@ -2,12 +2,16 @@ CREATE TABLE IF NOT EXISTS token_types (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     token_type TEXT
         NOT NULL
-        CHECK (token_type IN ('operation', 'account'))
 );
 
 INSERT INTO token_types (token_type)
-VALUES ('operation'),
-    ('account');
+VALUES ('deposit'),
+    ('withdrawal'),
+    ('transfer'),
+    ('person'),
+    ('earning'),
+    ('account'),
+    ('close');
 
 CREATE TABLE IF NOT EXISTS operation_tokens (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -26,6 +30,7 @@ CREATE TABLE IF NOT EXISTS operation_tokens (
     token_type_id BIGINT
         NOT NULL
         REFERENCES token_types(id)
+        ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS penalized_reasons (
@@ -67,11 +72,11 @@ CREATE TABLE IF NOT EXISTS account_penalties_by_smurfing (
         REFERENCES history(id),
     warnings INTEGER
         NOT NULL
-        CHECK (warnings > 0 AND warnings <= 9),
+        CHECK (warnings >= 0 AND warnings <= 9),
     suspensions INTEGER 
         NOT NULL
         DEFAULT 0
-        CHECK (suspensions >= 0 AND suspensions < 3)
+        CHECK (suspensions >= 0 AND suspensions <= 3)
 );
 
 CREATE TABLE IF NOT EXISTS account_penalties_by_flagged (
@@ -82,6 +87,16 @@ CREATE TABLE IF NOT EXISTS account_penalties_by_flagged (
         REFERENCES history(id),
     suspicions INTEGER
         NOT NULL
-        DEFAULT 0
-        CHECK (suspicions <= 2 AND suspicions >= 0)
+        DEFAULT 1
+        CHECK (suspicions <= 2 AND suspicions > 0)
+);
+
+CREATE TABLE IF NOT EXISTS black_list (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY.
+    account_id BIGINT 
+        NOT NULL
+        REFERENCES accounts(id),
+    adding_to TIMESTAMP 
+        NOT NULL
+        DEFAULT CURRENT_TIMESTAMP
 );

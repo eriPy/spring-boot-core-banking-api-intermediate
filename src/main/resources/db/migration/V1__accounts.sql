@@ -103,8 +103,18 @@ CREATE TABLE IF NOT EXISTS savings_accounts (
     interest_receivable NUMERIC(19, 4)
         NOT NULL
         DEFAULT 0
-        CHECK (interest_receivable >= 0)
+        CHECK (interest_receivable >= 0),
+    transactions_without_fee INTEGER 
+        NOT NULL 
+        DEFAULT 6
+        CHECK (transactions_without_fee >= 0)
 );
+
+ALTER TABLE IF EXISTS savings_accounts
+    ADD COLUMN transactions_without_fee INT 
+        NOT NULL 
+        DEFAULT 6
+        CHECK (transactions_without_fee >= 0);
 
 CREATE TABLE IF NOT EXISTS checking_accounts (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

@@ -12,6 +12,15 @@ CREATE TABLE IF NOT EXISTS transaction_types (
         ))
 );
 
+INSERT INTO transaction_types (transaction_type)
+VALUES 
+    ('withdrawal'), 
+    ('deposit'), 
+    ('transfer'),
+    ('fee'), 
+    ('interest_credit'), 
+    ('interest_charge');
+
 CREATE TABLE IF NOT EXISTS payment_methods (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     payment_method TEXT

@@ -28,7 +28,7 @@ public class AccountPenaltiesByFlagged {
     private Long id;
 
     @OneToOne 
-    @JoinColumn(name = "history_id", insertable = false, unique = true, updatable = false)
+    @JoinColumn(name = "history_id", unique = true, updatable = false, nullable = false)
     @NotNull (message = "The history references is required")
     private History history;
 

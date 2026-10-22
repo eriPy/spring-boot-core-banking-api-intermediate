@@ -1,37 +1,56 @@
+CREATE TABLE IF NOT EXISTS overdrafts (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    person_type_id BIGINT  
+        NOT NULL
+        REFERENCES person_types(id),
+    overdraft_value NUMERIC(19, 4)
+        NOT NULL
+        UNIQUE
+);
+
+INSERT INTO overdrafts (person_type_id, overdraft_value)
+SELECT pt.id, v.overdraft_value
+FROM (VALUES
+    ('student', 200),
+    ('unemployed', 500),
+    ('employed', 1000),
+    ('professional', 2000),
+    ('businessman', 5000)
+) AS v(person_type, overdraft_value)
+JOIN person_types pt ON pt.person_type = v.person_type;
+
+DROP TRIGGER IF EXISTS trg_approve_overdraft ON accounts;
+DROP FUNCTION IF EXISTS approve_overdraft();
+
 CREATE FUNCTION approve_overdraft() 
 RETURNS trigger AS $$
 DECLARE
     ac_ty TEXT;
     p_t TEXT;
 BEGIN
-    SELECT act.account_type INTO ac_ty
+    SELECT act.account_type, pt.person_type INTO ac_ty, p_t
     FROM accounts a
     JOIN accounts_types act ON act.id = a.accounts_type_id
-    WHERE a.id = NEW.id;
-    
-    SELECT pt.person_type INTO p_t
-    FROM accounts a
     JOIN person_types pt ON pt.id = a.person_type_id
-    WHERE a.id = NEW.id;
+    WHERE a.id = NEW.id;    
 
     IF ac_ty = 'checking_account' THEN
         INSERT INTO checking_accounts (account_id, overdraft_limit)
         VALUES (
             NEW.id,
-            CASE p_t
-                WHEN 'student' THEN 200
-                WHEN 'unemployed' THEN 500
-                WHEN 'employed' THEN 1000
-                WHEN 'professional' THEN 2000
-                WHEN 'businessman' THEN 5000
-            END
-        );
+            (SELECT o.overdraft_value
+            FROM overdrafts o
+            JOIN person_types pt ON pt.id = o.person_type_id
+            WHERE pt.person_type = p_t)
+        )
+        ON CONFLICT (account_id)
+        DO UPDATE SET overdraft_limit = EXCLUDED.overdraft_limit;
     END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_approve_overdraft
-AFTER INSERT ON accounts
+AFTER INSERT OR UPDATE OF person_type_id ON accounts
 FOR EACH ROW
 EXECUTE FUNCTION approve_overdraft();
