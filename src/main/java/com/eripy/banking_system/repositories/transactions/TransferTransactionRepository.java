@@ -17,6 +17,7 @@ public interface TransferTransactionRepository extends JpaRepository<TransferTra
         WHERE ttype.transactionType = 'transfer'
         AND tt.payee = :payee
         AND t.transactionDate >= :transactionDate
+        ORDER BY t.transactionDate DESC
     """)
     List<TransferTransaction> findLastPeriod(
         @Param("payee") Account payee,

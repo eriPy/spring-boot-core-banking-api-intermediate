@@ -17,6 +17,7 @@ public interface DepositTransactionRepository extends JpaRepository<DepositTrans
         WHERE t.transactionDate >= :transactionDate
         AND ttype.transactionType = 'deposit'
         AND t.account = :account
+        ORDER BY t.transactionDate DESC
     """)
     List<DepositTransaction> findLastPeriod(
         @Param("transactionDate") LocalDateTime transactionDate,

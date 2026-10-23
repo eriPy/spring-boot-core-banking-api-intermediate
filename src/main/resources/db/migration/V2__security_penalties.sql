@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS account_penalties_by_flagged (
 );
 
 CREATE TABLE IF NOT EXISTS black_list (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY.
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     account_id BIGINT 
         NOT NULL
         REFERENCES accounts(id),

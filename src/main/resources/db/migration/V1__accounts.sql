@@ -64,8 +64,7 @@ CREATE TABLE IF NOT EXISTS accounts (
         CHECK (account_status IN (
             'frozen', 
             'closed', 
-            'active', 
-            'inactive'
+            'active'
         ))
         DEFAULT 'active',
     accounts_type_id BIGINT
@@ -109,12 +108,6 @@ CREATE TABLE IF NOT EXISTS savings_accounts (
         DEFAULT 6
         CHECK (transactions_without_fee >= 0)
 );
-
-ALTER TABLE IF EXISTS savings_accounts
-    ADD COLUMN transactions_without_fee INT 
-        NOT NULL 
-        DEFAULT 6
-        CHECK (transactions_without_fee >= 0);
 
 CREATE TABLE IF NOT EXISTS checking_accounts (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
