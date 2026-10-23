@@ -13,7 +13,7 @@ public class RateLimitConfig {
             .builder()
             .addLimit(limit ->
                 limit.capacity(1)
-                .refillGreedy(1, Duration.ofSeconds(30))
+                .refillGreedy(1, Duration.ofSeconds(15))
             )
             .build();
     }
@@ -23,8 +23,8 @@ public class RateLimitConfig {
         return BucketConfiguration
             .builder()
             .addLimit(limit ->
-                limit.capacity(5)
-                .refillGreedy(5, Duration.ofMinutes(10))
+                limit.capacity(7)
+                .refillGreedy(3, Duration.ofMinutes(10))
             )
             .build();
     }

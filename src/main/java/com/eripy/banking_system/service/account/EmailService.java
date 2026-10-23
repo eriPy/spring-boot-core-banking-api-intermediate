@@ -1,5 +1,8 @@
 package com.eripy.banking_system.service.account;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.mail.MailAuthenticationException;
@@ -7,6 +10,7 @@ import org.springframework.mail.MailSendException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import com.eripy.banking_system.entities.accounts.Account;
 import com.eripy.banking_system.exceptions.MailDeliveryException;
 
 @Service 
@@ -20,13 +24,7 @@ public class EmailService {
         this.mailSender = mailSender;
     }
 
-    public void sendEmailToSignUp(String to, String sdt) {
-        logger.info("Preparing an email");
-        SimpleMailMessage msg = new SimpleMailMessage();
-        msg.setFrom("bank-account@gmail.com");  
-        msg.setTo(to);
-        msg.setSubject("Gmail Authentication");
-        msg.setText("Token to Sign Up: " + sdt);
+    private void sendAndTest(SimpleMailMessage msg, String to) {
         try {
             logger.info("Sending email to user");
             mailSender.send(msg);
@@ -40,6 +38,16 @@ public class EmailService {
         }
     }
 
+    public void sendEmailToSignUp(String to, String sdt) {
+        logger.info("Preparing an email");
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setFrom("bank-account@gmail.com");  
+        msg.setTo(to);
+        msg.setSubject("Gmail Authentication");
+        msg.setText("Token to Sign Up: " + sdt);
+        sendAndTest(msg, to);
+    }
+
     public void sendEmail(String to, String subject, String text) {
         logger.info("Preparing an email");
         SimpleMailMessage msg = new SimpleMailMessage();
@@ -47,16 +55,36 @@ public class EmailService {
         msg.setTo(to);
         msg.setSubject(subject);
         msg.setText(text);
-        try {
-            logger.info("Sending email to user");
-            mailSender.send(msg);
-            logger.info("The email was send to user");
-        } catch (MailAuthenticationException e) {
-            logger.warn("Invalid credentials, info: " + e.getMessage());
-            throw new MailDeliveryException("Problem in the client service");
-        } catch (MailSendException e) {
-            logger.warn("Cannot send the email to: " + to + ", info: " + e.getMessage());
-            throw new MailDeliveryException("Cannot send the email");
+        sendAndTest(msg, to);
+    }
+
+    public void penalizationEmail(Account account, LocalDateTime date, String ban, String reason) {
+        logger.info("Preparing the email for a penalization");
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setFrom("bank-account@gmail.com");
+        msg.setTo(account.getEmail());
+        String subject = ban.equals("ban") ? 
+            "Notice of Permanent " + 
+            account.getAccountType().getAccountType().replace("_", " ") + 
+            " Suspension" :
+            "Notice of " +
+            account.getAccountType().getAccountType().replace("_", " ") + 
+            " Freeze";
+        msg.setSubject(subject);
+        String legibleDate = null;
+        if (date != null) {
+            DateTimeFormatter formatShort = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT);
+            legibleDate = date.format(formatShort);
         }
+        StringBuilder sb = new StringBuilder();
+        sb.append("We regret to inform you that your account has been ");
+        sb.append(ban.equals("ban") ?
+            "permanently suspended " :
+            "frozen "
+        );
+        sb.append("due to suspected " + reason);
+        if (!ban.equals("ban")) sb.append("\nYour account will remain active until: " + legibleDate);
+        msg.setText(sb.toString());
+        sendAndTest(msg, account.getEmail());
     }
 }

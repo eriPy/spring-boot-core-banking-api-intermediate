@@ -8,7 +8,6 @@ import com.eripy.banking_system.entities.accounts.Account;
 import com.eripy.banking_system.entities.accounts.AccountStatus;
 import com.eripy.banking_system.entities.accounts.AccountsType;
 import com.eripy.banking_system.entities.accounts.PersonType;
-import com.eripy.banking_system.exceptions.FormatDataException;
 import com.eripy.banking_system.exceptions.InconsistenceDataException;
 import com.eripy.banking_system.repositories.accounts.AccountRepository;
 
@@ -67,7 +66,7 @@ public class SecurityService {
     public void evaluateStatus(Account account) {
         if (account.getAccountStatus() != AccountStatus.active) {
             logger.info("The account cannot make transactions");
-            throw new FormatDataException("Invalid data");
+            throw new InconsistenceDataException("Invalid data");
         }
     }
 }

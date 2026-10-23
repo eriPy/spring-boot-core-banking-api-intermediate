@@ -1,6 +1,7 @@
 package com.eripy.banking_system.entities.transactions;
 
 import java.math.BigDecimal;
+import com.eripy.banking_system.dto.transactions.TransactionDetail;
 import com.eripy.banking_system.entities.accounts.Account;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -23,7 +24,7 @@ import lombok.Setter;
 @Setter 
 @NoArgsConstructor 
 @AllArgsConstructor 
-public class TransferTransaction {
+public class TransferTransaction implements TransactionDetail {
     @Id 
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
