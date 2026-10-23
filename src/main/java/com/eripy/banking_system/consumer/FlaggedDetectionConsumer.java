@@ -10,26 +10,61 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import com.eripy.banking_system.dto.transactions.FlaggedDetail;
 import com.eripy.banking_system.dto.transactions.TransactionDetail;
+import com.eripy.banking_system.entities.accounts.Account;
+import com.eripy.banking_system.entities.accounts.AccountStatus;
+import com.eripy.banking_system.entities.security.AccountPenaltiesByFlagged;
+import com.eripy.banking_system.entities.security.BlackList;
+import com.eripy.banking_system.entities.security.History;
+import com.eripy.banking_system.entities.security.PenalizedAccount;
+import com.eripy.banking_system.entities.security.PenalizedReason;
 import com.eripy.banking_system.entities.transactions.DepositTransaction;
 import com.eripy.banking_system.entities.transactions.TransferTransaction;
 import com.eripy.banking_system.event.UserBehaviorAnalyzedEvent;
+import com.eripy.banking_system.repositories.accounts.AccountRepository;
+import com.eripy.banking_system.repositories.penalties.AccountPenaltiesByFlaggedRepository;
+import com.eripy.banking_system.repositories.penalties.BlackListRepository;
+import com.eripy.banking_system.repositories.penalties.PenalizedAccountRepository;
 import com.eripy.banking_system.repositories.transactions.DepositTransactionRepository;
 import com.eripy.banking_system.repositories.transactions.TransferTransactionRepository;
+import com.eripy.banking_system.service.GetterService;
+import com.eripy.banking_system.service.account.EmailService;
+import com.eripy.banking_system.service.account.SecurityService;
 
 @Component 
 public class FlaggedDetectionConsumer {
     private final DepositTransactionRepository depositTransactionRepository;
     private final TransferTransactionRepository transferTransactionRepository;
+    private final EmailService emailService;
+    private final AccountPenaltiesByFlaggedRepository accountPenaltiesByFlaggedRepository;
+    private final GetterService getterService;
+    private final AccountRepository accountRepository;
+    private final BlackListRepository blackListRepository;
+    private final SecurityService securityService;
+    private final PenalizedAccountRepository penalizedAccountRepository;
     private static final Logger logger = LoggerFactory.getLogger(FlaggedDetectionConsumer.class);
     private static final BigDecimal THREE = new BigDecimal("3");
     private static final BigDecimal FOUR = new BigDecimal("4");
 
     public FlaggedDetectionConsumer(
         DepositTransactionRepository depositTransactionRepository,
-        TransferTransactionRepository transferTransactionRepository
+        TransferTransactionRepository transferTransactionRepository,
+        EmailService emailService,
+        AccountPenaltiesByFlaggedRepository accountPenaltiesByFlaggedRepository,
+        GetterService getterService,
+        AccountRepository accountRepository,
+        BlackListRepository blackListRepository,
+        SecurityService securityService,
+        PenalizedAccountRepository penalizedAccountRepository
     ) {
         this.depositTransactionRepository = depositTransactionRepository;
         this.transferTransactionRepository = transferTransactionRepository;
+        this.emailService = emailService;
+        this.accountPenaltiesByFlaggedRepository = accountPenaltiesByFlaggedRepository;
+        this.getterService = getterService;
+        this.accountRepository = accountRepository;
+        this.blackListRepository = blackListRepository;
+        this.securityService = securityService;
+        this.penalizedAccountRepository = penalizedAccountRepository;
     }
 
     @Transactional 
@@ -76,13 +111,25 @@ public class FlaggedDetectionConsumer {
         boolean ban = max.compareTo(maxBan) >= 0 || 
             monthly.compareTo(maxBan) >= 0 ||
             period.compareTo(periodBan) >= 0;
+        if (!ban && !warning) {
+            logger.info("The user will not be penalized.");
+            return;
+        }
+        logger.info("Getting the user history information");
+        History history = getterService.getOrCreateHistory(event.account(), "History");
+        logger.info("Search the user account flagged history");
+        AccountPenaltiesByFlagged apf = getterService
+            .getOrCreateAccountPenaltiesByFlagged(history, "Flagged history");
+        apf.setSuspicions(apf.getSuspicions() + 1);
+        securityService.saveInRedis(event.account());
         if (ban) {
+            banUser(event.account(), apf);
             return;
         }
         if (warning) {
+            frozenUser(event.account(), apf);
             return;
         }
-        logger.info("The user will not be penalized.");
     }
 
     private <T extends TransactionDetail> FlaggedDetail getFormat(
@@ -120,5 +167,43 @@ public class FlaggedDetectionConsumer {
         LocalDateTime thisMonth
     ) {
         return getFormat(max, monthly, period, deposits, thisMonth);
+    }
+
+    private void banUser(Account account, AccountPenaltiesByFlagged apf) {
+        logger.info("Saved new Account information");
+        account.setAccountStatus(AccountStatus.closed);
+        accountRepository.save(account);
+        logger.info("Add user to blacklist");
+        blackListRepository.save(new BlackList(account));
+        logger.info("Saving flagged data");
+        accountPenaltiesByFlaggedRepository.save(apf);
+        emailService.penalizationEmail(
+            account, 
+            null, 
+            "ban", 
+            "Severe Fraud Suspicion"
+        );
+    }
+
+    private void frozenUser(Account account, AccountPenaltiesByFlagged apf) {
+        logger.info("Evaluating penalized for flagged");
+        if (apf.getSuspicions() == 2) {
+            banUser(account, apf);
+            return;
+        }
+        LocalDateTime frozenTime = LocalDateTime.now().plusMonths(1);
+        account.setAccountStatus(AccountStatus.frozen);
+        accountRepository.save(account);
+        logger.info("Add account to penalized table");
+        PenalizedReason pr = getterService.getPenalizedReason("flagged");
+        PenalizedAccount pa = new PenalizedAccount(account, frozenTime, pr);
+        penalizedAccountRepository.save(pa);
+        accountPenaltiesByFlaggedRepository.save(apf);
+        emailService.penalizationEmail(
+            account, 
+            frozenTime, 
+            "frozen", 
+            "Suspicious Transaction - Temporary Hold"
+        );
     }
 }

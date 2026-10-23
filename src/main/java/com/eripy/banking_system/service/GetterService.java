@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,12 +12,16 @@ import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.RedisSystemException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+
+import com.eripy.banking_system.dto.account.IdEntity;
 import com.eripy.banking_system.entities.accounts.Account;
 import com.eripy.banking_system.entities.accounts.AccountsType;
 import com.eripy.banking_system.entities.accounts.CheckingAccount;
 import com.eripy.banking_system.entities.accounts.FixedDepositAccount;
 import com.eripy.banking_system.entities.accounts.PersonType;
 import com.eripy.banking_system.entities.accounts.SavingsAccount;
+import com.eripy.banking_system.entities.security.AccountPenaltiesByFlagged;
+import com.eripy.banking_system.entities.security.History;
 import com.eripy.banking_system.entities.security.Overdraft;
 import com.eripy.banking_system.entities.security.PenalizedReason;
 import com.eripy.banking_system.entities.security.TokenType;
@@ -29,6 +34,8 @@ import com.eripy.banking_system.repositories.accounts.CheckingAccountRepository;
 import com.eripy.banking_system.repositories.accounts.FixedDepositAccountRepository;
 import com.eripy.banking_system.repositories.accounts.PersonTypeRepository;
 import com.eripy.banking_system.repositories.accounts.SavingsAccountRepository;
+import com.eripy.banking_system.repositories.penalties.AccountPenaltiesByFlaggedRepository;
+import com.eripy.banking_system.repositories.penalties.HistoryRepository;
 import com.eripy.banking_system.repositories.penalties.OverdraftRepository;
 import com.eripy.banking_system.repositories.penalties.PenalizedReasonRepository;
 import com.eripy.banking_system.repositories.penalties.TokenTypeRepository;
@@ -53,6 +60,8 @@ public class GetterService {
     private final PaymentMethodRepository paymentMethodRepository;
     private final TokenTypeRepository tokenTypeRepository;
     private final PenalizedReasonRepository penalizedReasonRepository;
+    private final HistoryRepository historyRepository;
+    private final AccountPenaltiesByFlaggedRepository accountPenaltiesByFlaggedRepository;
     private static final Logger logger = LoggerFactory.getLogger(GetterService.class);
 
     public GetterService(
@@ -68,7 +77,9 @@ public class GetterService {
         OverdraftRepository overdraftRepository,
         PaymentMethodRepository paymentMethodRepository,
         TokenTypeRepository tokenTypeRepository,
-        PenalizedReasonRepository penalizedReasonRepository
+        PenalizedReasonRepository penalizedReasonRepository,
+        HistoryRepository historyRepository,
+        AccountPenaltiesByFlaggedRepository accountPenaltiesByFlaggedRepository
     ) {
         this.redis = redis;
         this.mapper = mapper;
@@ -83,6 +94,8 @@ public class GetterService {
         this.paymentMethodRepository = paymentMethodRepository;
         this.tokenTypeRepository = tokenTypeRepository;
         this.penalizedReasonRepository = penalizedReasonRepository;
+        this.historyRepository = historyRepository;
+        this.accountPenaltiesByFlaggedRepository = accountPenaltiesByFlaggedRepository;
     }
 
     public <T> void saveToRedis(String key, T data, Duration duration) throws JacksonException {
@@ -234,4 +247,36 @@ public class GetterService {
             () -> getTokenTypeFromDatabase(tokenType));
     }
 
+    private <T extends IdEntity> T getOrCreate(
+        Supplier<Optional<T>> dataFecher,
+        Supplier<T> constructor,
+        Function<T, T> save,
+        String msg
+    ) {
+        T t = dataFecher.get()
+            .orElseGet(() -> {
+                logger.info("The user has no " + msg);
+                return constructor.get();
+            });
+        if (t.getId() == null) return save.apply(t);
+        return t;
+    }
+
+    public History getOrCreateHistory(Account account, String msg) {
+        return getOrCreate(
+            () -> historyRepository.findByAccount(account), 
+            () -> new History(account),
+            (history) -> historyRepository.save(history), 
+            msg
+        );
+    }
+
+    public AccountPenaltiesByFlagged getOrCreateAccountPenaltiesByFlagged(History history, String msg) {
+        return getOrCreate(
+            () -> accountPenaltiesByFlaggedRepository.findByHistory(history), 
+            () -> new AccountPenaltiesByFlagged(history), 
+            (apf) -> accountPenaltiesByFlaggedRepository.save(apf),
+            msg
+        );
+    }
 }

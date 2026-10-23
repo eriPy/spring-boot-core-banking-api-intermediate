@@ -1,5 +1,7 @@
 package com.eripy.banking_system.entities.security;
 
+import com.eripy.banking_system.dto.account.IdEntity;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -22,7 +24,7 @@ import lombok.Setter;
 @Setter 
 @NoArgsConstructor 
 @AllArgsConstructor 
-public class AccountPenaltiesByFlagged {
+public class AccountPenaltiesByFlagged implements IdEntity {
     @Id 
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -32,8 +34,14 @@ public class AccountPenaltiesByFlagged {
     @NotNull (message = "The history references is required")
     private History history;
 
-    @Column(name = "suspicions", insertable = false, updatable = false)
+    @Column(name = "suspicions", insertable = false, nullable = false)
     @Min(value = 0, message = "suspicions must be 1 or greater")
     @Max(value = 2, message = "suspicions cannot exceed 3")
     private int suspicions;
+
+    public AccountPenaltiesByFlagged(
+        History history
+    ) {
+        this.history = history;
+    }
 }

@@ -3,10 +3,8 @@ package com.eripy.banking_system.service.account;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import com.eripy.banking_system.entities.accounts.Account;
 import com.eripy.banking_system.entities.accounts.FixedDepositAccount;
@@ -30,7 +28,6 @@ public class SixDigitTokenService {
     private final EmailService emailService;
     private final AnalizedProducer analizedProducer;
     private final FixedDepositAccountRepository fixedDepositAccountRepository;
-    private final RedisTemplate<String, String> redis;
     private static final Logger logger = LoggerFactory.getLogger(SixDigitTokenService.class);
 
     public SixDigitTokenService(
@@ -40,8 +37,7 @@ public class SixDigitTokenService {
         OperationTokenRepository operationtpkTokenRepository,
         EmailService emailService,
         AnalizedProducer analizedProducer,
-        FixedDepositAccountRepository fixedDepositAccountRepository,
-        RedisTemplate<String, String> redis
+        FixedDepositAccountRepository fixedDepositAccountRepository
     ) {
         this.getterService = getterService;
         this.securityService = securityService;
@@ -50,13 +46,11 @@ public class SixDigitTokenService {
         this.emailService = emailService;
         this.analizedProducer = analizedProducer;
         this.fixedDepositAccountRepository = fixedDepositAccountRepository;
-        this.redis = redis;
     }
 
     public void generateSixDigitToken(Long id, String operation) {
         logger.info("Evaluate the account data");
-        Account account = getterService.getAccountFromDatabase(id);
-        securityService.evaluateStatus(account);
+        Account account = securityService.evaluateIfPass(id);
         List<String> invalid = List.of("withdrawal", "deposit", "transfer");
         boolean isFixedDepositAccount = account.getAccountType().getAccountType().equals("fixed_deposit_account");
         boolean isInvalid = invalid.contains(operation);
@@ -92,13 +86,7 @@ public class SixDigitTokenService {
 
     public void evaluateSixDigitToken(String token, Long id, String operation) {
         logger.info("Evaluate the account data");
-        Account account = getterService.getAccountFromDatabase(id);
-        securityService.evaluateStatus(account);
-        String isBanned = redis.opsForValue().get("banned-account-" + account.getId());
-        if (isBanned != null) {
-            logger.warn("This account was banned");
-            throw new InconsistenceDataException("Invalid data");
-        }
+        Account account = securityService.evaluateIfPass(id);
         TokenType tt = getterService.getTokenType(operation);
         OperationToken ot = operationTokenRepository.findByLastestToken(
             token, 

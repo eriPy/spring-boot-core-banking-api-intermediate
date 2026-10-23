@@ -1,7 +1,9 @@
 package com.eripy.banking_system.service.account;
 
+import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import com.eripy.banking_system.dto.account.SignUpRequest;
 import com.eripy.banking_system.entities.accounts.Account;
@@ -10,16 +12,24 @@ import com.eripy.banking_system.entities.accounts.AccountsType;
 import com.eripy.banking_system.entities.accounts.PersonType;
 import com.eripy.banking_system.exceptions.InconsistenceDataException;
 import com.eripy.banking_system.repositories.accounts.AccountRepository;
+import com.eripy.banking_system.service.GetterService;
 
 @Service 
 public class SecurityService {
     private final AccountRepository accountRepository;
+    private final RedisTemplate<String, String> redis;
+    private final GetterService getterService;
+
     private static final Logger logger = LoggerFactory.getLogger(SecurityService.class);
 
     public SecurityService(
-        AccountRepository accountRepository
+        AccountRepository accountRepository,
+        RedisTemplate<String, String> redis,
+        GetterService getterService
     ) {
         this.accountRepository = accountRepository;
+        this.redis = redis;
+        this.getterService = getterService;
     }
 
     public void checkDataConsistency(
@@ -68,5 +78,24 @@ public class SecurityService {
             logger.info("The account cannot make transactions");
             throw new InconsistenceDataException("Invalid data");
         }
+    }
+
+    public void saveInRedis(Account account) {
+        redis.opsForValue().set(
+            "banned-account-" + account.getId(), 
+            "Sanctioned for smurfing", 
+            Duration.ofMinutes(15)
+        );
+    }
+
+    public Account evaluateIfPass(Long id) {
+        Account account = getterService.getAccountFromDatabase(id);
+        evaluateStatus(account);
+        String isBanned = redis.opsForValue().get("banned-account-" + account.getId());
+        if (isBanned != null) {
+            logger.warn("This account was banned");
+            throw new InconsistenceDataException("Invalid data");
+        }
+        return account;
     }
 }

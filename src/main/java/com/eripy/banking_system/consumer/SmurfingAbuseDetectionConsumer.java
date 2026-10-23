@@ -28,6 +28,7 @@ import com.eripy.banking_system.repositories.penalties.OperationTokenRepository;
 import com.eripy.banking_system.repositories.penalties.PenalizedAccountRepository;
 import com.eripy.banking_system.service.GetterService;
 import com.eripy.banking_system.service.account.EmailService;
+import com.eripy.banking_system.service.account.SecurityService;
 
 @Component 
 public class SmurfingAbuseDetectionConsumer {
@@ -41,6 +42,7 @@ public class SmurfingAbuseDetectionConsumer {
     private final GetterService getterService;
     private final PenalizedAccountRepository penalizedAccountRepository;
     private final EmailService emailService;
+    private final SecurityService securityService;
     private static final Logger logger = LoggerFactory.getLogger(SmurfingAbuseDetectionConsumer.class);
 
     public SmurfingAbuseDetectionConsumer(
@@ -53,7 +55,8 @@ public class SmurfingAbuseDetectionConsumer {
         BlackListRepository blackListRepository,
         GetterService getterService,
         PenalizedAccountRepository penalizedAccountRepository,
-        EmailService emailService
+        EmailService emailService,
+        SecurityService securityService
     ) {
         this.operationTokenRepository = operationTokenRepository;
         this.redis = redis;
@@ -65,6 +68,7 @@ public class SmurfingAbuseDetectionConsumer {
         this.getterService = getterService;
         this.penalizedAccountRepository = penalizedAccountRepository;
         this.emailService = emailService;
+        this.securityService = securityService;
     }
 
     @Transactional 
@@ -80,12 +84,12 @@ public class SmurfingAbuseDetectionConsumer {
             logger.info("Evaluating possible fraud");
             PenalizedReason pr = getterService.getPenalizedReason("smurfing");
             logger.info("Evaluating if user has a history");
-            History history = historyRepository.existsByAccount(event.account()) ?
-                historyRepository.findByAccount(event.account()) :
-                new History(event.account());
-            if (history.getId() == null) {
-                historyRepository.save(history);
-            }
+            History history = historyRepository.findByAccount(event.account())
+                .orElseGet(() -> {
+                    logger.info("The user has no history");
+                    return new History(event.account());
+                });
+            if (history.getId() == null) historyRepository.save(history);
             if (accountPenaltiesByFlaggedRepository.existsByHistory(history)) {
                 banAccount(event.account(), history, null);
                 return;
@@ -104,7 +108,7 @@ public class SmurfingAbuseDetectionConsumer {
                     return;
                 }
                 accountPenaltiesBySmurfingRepository.save(aps);
-                saveInRedis(event.account());
+                securityService.saveInRedis(event.account());
                 return;
             }
             logger.info("User found penalized for smurfing");
@@ -126,7 +130,7 @@ public class SmurfingAbuseDetectionConsumer {
             logger.info("Saving the penalized information");
             aps.setSuspensions(aps.getSuspensions() + 1);
             accountPenaltiesBySmurfingRepository.save(aps);
-            saveInRedis(account);
+            securityService.saveInRedis(account);
             emailService.penalizationEmail(
                 account, 
                 bannedUntil, 
@@ -166,20 +170,12 @@ public class SmurfingAbuseDetectionConsumer {
         accountPenaltiesBySmurfingRepository.save(aps);
         logger.info(apsExists ? "Update on penalties by smurfing tabe" : "Account saved on penalties by smurfing table");
         logger.info("Add the banned user to Redis");
-        saveInRedis(account);
+        securityService.saveInRedis(account);
         emailService.penalizationEmail(
             account, 
             null, 
             "ban", 
         "unusual transaction activity"
     );
-    }
-
-    private void saveInRedis(Account account) {
-        redis.opsForValue().set(
-            "banned-account-" + account.getId(), 
-            "Sanctioned for smurfing", 
-            Duration.ofMinutes(15)
-        );
     }
 }

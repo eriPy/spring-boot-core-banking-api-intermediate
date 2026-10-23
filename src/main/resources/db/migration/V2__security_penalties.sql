@@ -87,8 +87,8 @@ CREATE TABLE IF NOT EXISTS account_penalties_by_flagged (
         REFERENCES history(id),
     suspicions INTEGER
         NOT NULL
-        DEFAULT 1
-        CHECK (suspicions <= 2 AND suspicions > 0)
+        DEFAULT 0
+        CHECK (suspicions <= 2 AND suspicions >= 0)
 );
 
 CREATE TABLE IF NOT EXISTS black_list (

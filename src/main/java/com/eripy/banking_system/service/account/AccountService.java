@@ -38,4 +38,12 @@ public class AccountService {
         List<Account> information = getterService.getInformation(account.getEmail());
         return evaluateFormatService.getInformationFormat(information);
     }
+
+    public void unfreeze() {
+
+    }
+
+    public void inBlackList() {
+        
+    }
 }

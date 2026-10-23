@@ -24,10 +24,12 @@ import com.eripy.banking_system.entities.accounts.FixedDepositAccount;
 import com.eripy.banking_system.entities.accounts.PayrollAccount;
 import com.eripy.banking_system.entities.accounts.PersonType;
 import com.eripy.banking_system.entities.accounts.SavingsAccount;
+import com.eripy.banking_system.event.UserBehaviorAnalyzedEvent;
 import com.eripy.banking_system.exceptions.FormatDataException;
 import com.eripy.banking_system.exceptions.InvalidDateException;
 import com.eripy.banking_system.exceptions.InvalidQuantity;
 import com.eripy.banking_system.exceptions.ResourceNotFoundException;
+import com.eripy.banking_system.producer.AnalizedProducer;
 import com.eripy.banking_system.repositories.accounts.AccountRepository;
 import com.eripy.banking_system.repositories.accounts.CheckingAccountRepository;
 import com.eripy.banking_system.repositories.accounts.FixedDepositAccountRepository;
@@ -56,6 +58,8 @@ public class AuthService {
     private final PayrollAccountRepository payrollAccountRepository;
     private final SavingsAccountRepository savingsAccountRepository;
     private final SecurityService securityService;
+    private final AnalizedProducer analizedProducer;
+    private final AccountService accountService;
     private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
 
     @Value("${jwt.expiration}")
@@ -77,7 +81,9 @@ public class AuthService {
         FixedDepositAccountRepository fixedDepositAccountRepository,
         PayrollAccountRepository payrollAccountRepository,
         SavingsAccountRepository savingsAccountRepository,
-        SecurityService securityService
+        SecurityService securityService,
+        AnalizedProducer analizedProducer,
+        AccountService accountService
     ) {
         this.evaluationService = evaluationService;
         this.evaluateFormatService = evaluateFormatService;
@@ -95,6 +101,8 @@ public class AuthService {
         this.payrollAccountRepository = payrollAccountRepository;
         this.savingsAccountRepository = savingsAccountRepository;
         this.securityService = securityService;
+        this.analizedProducer = analizedProducer;
+        this.accountService = accountService;
     }
 
     public void evaluateData(SignUpRequest request) {
@@ -113,6 +121,7 @@ public class AuthService {
             logger.warn("The person type has no a valid formar");
             throw new FormatDataException("Invalid data");
         }
+        accountService.inBlackList();
         AccountsType at = evaluateFormatService.getAccountTypeObject(request.accountType(), ats);
         PersonType student = evaluateFormatService.getPersonTypeObject("student", pts);
         PersonType unemployed = evaluateFormatService.getPersonTypeObject("unemployed", pts);
@@ -237,6 +246,10 @@ public class AuthService {
             throw new FormatDataException("Invalid data");
         }
         List<Account> data = getterService.getInformation(request.email());
+        for (Account account: data) {
+            analizedProducer.userAnalized(new UserBehaviorAnalyzedEvent(account));
+            accountService.unfreeze();
+        }
         String password = data.get(0).getPassword();
         if (!encoder.matches(request.password(), password)) {
             logger.warn("The password not match");

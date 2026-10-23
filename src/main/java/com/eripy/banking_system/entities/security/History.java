@@ -1,5 +1,6 @@
 package com.eripy.banking_system.entities.security;
 
+import com.eripy.banking_system.dto.account.IdEntity;
 import com.eripy.banking_system.entities.accounts.Account;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -20,7 +21,7 @@ import lombok.Setter;
 @Setter 
 @NoArgsConstructor 
 @AllArgsConstructor 
-public class History {
+public class History implements IdEntity {
     @Id 
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
