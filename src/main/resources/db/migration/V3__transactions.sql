@@ -2,14 +2,6 @@ CREATE TABLE IF NOT EXISTS transaction_types (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     transaction_type TEXT
         NOT NULL
-        CHECK (transaction_type IN (
-            'withdrawal', 
-            'deposit', 
-            'transfer',
-            'fee', 
-            'interest_credit', 
-            'interest_charge'
-        ))
 );
 
 INSERT INTO transaction_types (transaction_type)
@@ -19,20 +11,12 @@ VALUES
     ('transfer'),
     ('fee'), 
     ('interest_credit'), 
-    ('interest_charge');
+    ('interest_accrual');                                                                                                                
 
 CREATE TABLE IF NOT EXISTS payment_methods (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     payment_method TEXT
         NOT NULL
-        CHECK (payment_method IN (
-            'cash',
-            'check',
-            'bank_teller',
-            'atm',
-            'bank',
-            'system'
-    ))
 );
 
 INSERT INTO payment_methods (payment_method)
@@ -136,7 +120,7 @@ CREATE TABLE IF NOT EXISTS interest_credit_transactions (
     CONSTRAINT closing_balance CHECK (ending_balance > previous_balance)
 );
 
-CREATE TABLE IF NOT EXISTS interest_charge_transactions (
+CREATE TABLE IF NOT EXISTS interest_accrual_transactions (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     transaction_id BIGINT
         NOT NULL
@@ -144,8 +128,16 @@ CREATE TABLE IF NOT EXISTS interest_charge_transactions (
     payment_method_id BIGINT
         NOT NULL
         REFERENCES payment_methods(id),
-    previous_balance NUMERIC(19, 4),
-    ending_balance NUMERIC(19, 4),
-    CONSTRAINT opening_balance CHECK (previous_balance >= 0),
-    CONSTRAINT closing_balance CHECK (ending_balance < previous_balance)
+    previous_overdraft NUMERIC(19, 4)
+        NOT NULL
+        CHECK (previous_overdraft >= 0),
+    ending_overdraft NUMERIC(19, 4)
+        NOT NULL
+        CHECK (ending_overdraft >= 0),
+    previous_interest NUMERIC(19, 4)
+        NOT NULL
+        CHECK (previous_interest >= 0),
+    ending_interest NUMERIC(19, 4)
+        NOT NULL
+        CHECK (ending_interest >= 0)
 );

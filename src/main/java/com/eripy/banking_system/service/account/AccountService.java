@@ -1,9 +1,11 @@
 package com.eripy.banking_system.service.account;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import com.eripy.banking_system.dto.account.AccountInformationResponse;
 import com.eripy.banking_system.entities.accounts.Account;
@@ -23,6 +25,7 @@ public class AccountService {
     private final EvaluateFormatService evaluateFormatService;
     private final PenalizedAccountRepository penalizedAccountRepository;
     private final BlackListRepository blackListRepository;
+    private final RedisTemplate<String, String> redis;
     private static final Logger logger = LoggerFactory.getLogger(AccountService.class);
 
     public AccountService(
@@ -30,13 +33,15 @@ public class AccountService {
         AccountRepository accountRepository,
         EvaluateFormatService evaluateFormatService,
         PenalizedAccountRepository penalizedAccountRepository,
-        BlackListRepository blackListRepository
+        BlackListRepository blackListRepository,
+        RedisTemplate<String, String> redis
     ) {
         this.getterService = getterService;
         this.accountRepository = accountRepository;
         this.evaluateFormatService = evaluateFormatService;
         this.penalizedAccountRepository = penalizedAccountRepository;
         this.blackListRepository = blackListRepository;
+        this.redis = redis;
     }
 
     public AccountInformationResponse getUserInformation(Long id) {
@@ -73,5 +78,21 @@ public class AccountService {
             logger.info("This user is on the blacklist");
             throw new InconsistenceDataException("Invalid access");
         }
+    }
+
+    public void setRedisUserInformation(Account account) {
+        logger.info("Getting the old user information");
+        List<Account> accounts = getterService.getInformation(account.getEmail());
+        logger.info("Deleting the old user informacion");
+        redis.delete("user-" + account.getEmail() + "-session");
+        logger.info("Saving the new user information");
+        for (int i = 0; i < accounts.size(); i++) {
+            if (accounts.get(i).getId().equals(account.getId())) {
+                accounts.set(i, account);
+                break;
+            }
+        }
+        getterService.saveToRedis("user-" + account.getEmail() + "-session", accounts, Duration.ofHours(12));
+        logger.info("New Information saved");
     }
 }

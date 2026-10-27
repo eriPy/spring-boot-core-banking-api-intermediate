@@ -41,11 +41,6 @@ BEFORE INSERT ON interest_credit_transactions
 FOR EACH ROW
 EXECUTE FUNCTION balances_increase_or_decrease('-1');
 
-CREATE TRIGGER trg_balances_decrease_to_charge
-BEFORE INSERT ON interest_charge_transactions
-FOR EACH ROW
-EXECUTE FUNCTION balances_increase_or_decrease('1');
-
 CREATE FUNCTION set_balance_in_transaction()
 RETURNS trigger AS $$
 DECLARE 

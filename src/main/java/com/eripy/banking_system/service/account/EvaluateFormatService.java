@@ -59,7 +59,8 @@ public class EvaluateFormatService {
                 censoredAccountCard,
                 account.getBalance(),
                 account.getMonthlyEarnings(),
-                account.getAccountType().getAccountType()
+                account.getAccountType().getAccountType(),
+                String.valueOf(account.getAccountStatus())
             ));
         }
         String uncensoredIdCard = accounts.get(0).getIdCard();

@@ -41,8 +41,8 @@ BEFORE UPDATE OR DELETE ON interest_credit_transactions
 FOR EACH ROW 
 EXECUTE FUNCTION inmutable_table();
 
-CREATE TRIGGER trg_inmutable_table_interest_charge_transactions
-BEFORE UPDATE OR DELETE ON interest_charge_transactions
+CREATE TRIGGER trg_inmutable_table_interest_accrual_transactions
+BEFORE UPDATE OR DELETE ON interest_accrual_transactions
 FOR EACH ROW 
 EXECUTE FUNCTION inmutable_table();
 

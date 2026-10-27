@@ -7,5 +7,6 @@ public record AccountGeneral(
     String accountCard,
     BigDecimal balance,
     BigDecimal monthlyEarnings,
-    String accountType
+    String accountType,
+    String accountStatus
 ) {}

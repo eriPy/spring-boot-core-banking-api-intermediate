@@ -34,10 +34,10 @@ CREATE TABLE IF NOT EXISTS person_types (
 
 INSERT INTO person_types (person_type, salary_cap)
 VALUES 
-    ('student', 500),
-    ('unemployed', 750),
-    ('employed', 10000),
-    ('professional', 15000),
+    ('student', 100),
+    ('unemployed', 500),
+    ('employed', 5000),
+    ('professional', 10000),
     ('businessman', 20000);
 
 CREATE TABLE IF NOT EXISTS accounts (
@@ -99,10 +99,6 @@ CREATE TABLE IF NOT EXISTS savings_accounts (
     credit_interest_rate NUMERIC(5, 4)
         NOT NULL
         DEFAULT 0.0100,
-    interest_receivable NUMERIC(19, 4)
-        NOT NULL
-        DEFAULT 0
-        CHECK (interest_receivable >= 0),
     transactions_without_fee INTEGER 
         NOT NULL 
         DEFAULT 6
@@ -147,9 +143,5 @@ CREATE TABLE IF NOT EXISTS fixed_deposit_account (
         NOT NULL,
     credit_interest_rate NUMERIC(5, 4)
         NOT NULL
-        DEFAULT 0.0750,
-    interest_receivable NUMERIC(19, 4)
-        NOT NULL
-        DEFAULT 0
-        CHECK (interest_receivable >= 0)
+        DEFAULT 0.0750
 );

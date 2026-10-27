@@ -12,6 +12,7 @@ import com.eripy.banking_system.entities.accounts.CheckingAccount;
 import com.eripy.banking_system.entities.accounts.FixedDepositAccount;
 import com.eripy.banking_system.entities.accounts.SavingsAccount;
 import com.eripy.banking_system.entities.security.Overdraft;
+import com.eripy.banking_system.entities.transactions.FeeTransaction;
 import com.eripy.banking_system.entities.transactions.PaymentMethod;
 import com.eripy.banking_system.entities.transactions.Transaction;
 import com.eripy.banking_system.entities.transactions.TransactionType;
@@ -22,9 +23,11 @@ import com.eripy.banking_system.repositories.accounts.AccountRepository;
 import com.eripy.banking_system.repositories.accounts.CheckingAccountRepository;
 import com.eripy.banking_system.repositories.accounts.FixedDepositAccountRepository;
 import com.eripy.banking_system.repositories.accounts.SavingsAccountRepository;
+import com.eripy.banking_system.repositories.transactions.FeeTransactionRepository;
 import com.eripy.banking_system.repositories.transactions.TransactionRepository;
 import com.eripy.banking_system.repositories.transactions.WithdrawalTransactionRepository;
 import com.eripy.banking_system.service.GetterService;
+import com.eripy.banking_system.service.account.AccountService;
 import com.eripy.banking_system.service.account.EmailService;
 import com.eripy.banking_system.service.account.SecurityService;
 
@@ -39,6 +42,8 @@ public class WithdrawalService {
     private final CheckingAccountRepository checkingAccountRepository;
     private final WithdrawalTransactionRepository withdrawalTransactionRepository;
     private final SecurityService securityService;
+    private final AccountService accountService;
+    private final FeeTransactionRepository feeTransactionRepository;
     private static final Logger logger = LoggerFactory.getLogger(WithdrawalService.class);
 
     public WithdrawalService(
@@ -50,7 +55,9 @@ public class WithdrawalService {
         FixedDepositAccountRepository fixedDepositAccountRepository,
         CheckingAccountRepository checkingAccountRepository,
         WithdrawalTransactionRepository withdrawalTransactionRepository,
-        SecurityService securityService
+        SecurityService securityService,
+        AccountService accountService,
+        FeeTransactionRepository feeTransactionRepository
     ) {
         this.getterService = getterService;
         this.emailService = emailService;
@@ -61,6 +68,8 @@ public class WithdrawalService {
         this.checkingAccountRepository = checkingAccountRepository;
         this.withdrawalTransactionRepository = withdrawalTransactionRepository;
         this.securityService = securityService;
+        this.accountService = accountService;
+        this.feeTransactionRepository = feeTransactionRepository;
     }
 
     @Transactional 
@@ -79,7 +88,7 @@ public class WithdrawalService {
                 break;
             case "savings_account":
                 logger.info("Process a withdrawal for a saving account");
-                processToSavingAccount(account, request.amount());
+                processToSavingAccount(account, request);
                 break;
             case "checking_account":
                 logger.info("Process a withdrawal for a cheking account");
@@ -90,6 +99,7 @@ public class WithdrawalService {
         transactionRepository.save(transaction);
         withdrawalTransactionRepository.save(new WithdrawalTransaction(transaction, pm));
         accountRepository.save(account);
+        accountService.setRedisUserInformation(account);
         emailService.sendEmail(
             account.getEmail(),
             "Withdrawal successful",
@@ -101,7 +111,7 @@ public class WithdrawalService {
         logger.info("Search fixed deposit account");
         FixedDepositAccount fda = getterService.getFixedDepositAccountFromDatabase(account.getId());
         BigDecimal charge = fda.getInterestReceivable();
-        BigDecimal withdrawalAmount = getBigDecimalReferences(account.getBalance()).add(charge);
+        BigDecimal withdrawalAmount = account.getBalance().add(charge);
         boolean isNotTime = fda.getMaturiyDate().isAfter(LocalDateTime.now());
         boolean is0 = charge.compareTo(BigDecimal.ZERO) == 0;
         if (is0 || isNotTime) {
@@ -129,30 +139,33 @@ public class WithdrawalService {
         );
     }
 
-    public void processToSavingAccount(Account account, BigDecimal amount) {
+    public void processToSavingAccount(Account account, WithdrawalRequest request) {
         logger.info("Evaluating the balance");
-        if (account.getBalance().compareTo(amount) < 0) {
-            logger.info("Insufficient balance");
+        if (account.getBalance().compareTo(request.amount()) < 0) {
+            logger.info("Insufficient balance to process the withdrawal");
             throw new InvalidQuantity("Invalid data");
         }
         logger.info("Search the saving account of the user");
         SavingsAccount sa = getterService.getSavingsAccountFromDatabase(account.getId());
         if (sa.getTransactionsWithoutFee() == 0) { 
             logger.info("Validate the balance available");
-            BigDecimal reference = getBigDecimalReferences(amount).add(sa.getExcessTransactionFee());
-            if (account.getBalance().compareTo(reference) < 0) {
-                logger.warn("Insufficient balance");
+            if (account.getBalance().compareTo(request.amount().add(sa.getExcessTransactionFee())) < 0) {
+                logger.warn("Insufficient balance to pay the fee");
                 throw new InvalidQuantity("Invalid data");
             }
             logger.info("The user must pay fee");
-            TransactionType feeType = getterService.getTransactionType("fee");
             account.setBalance(account.getBalance().subtract(sa.getExcessTransactionFee()));
             logger.info("The fee was charged");
-            transactionRepository.save(new Transaction(
+            Transaction t = new Transaction(
                 account, 
-                feeType, 
-                sa.getExcessTransactionFee())
+                getterService.getTransactionType("fee"), 
+                sa.getExcessTransactionFee()
             );
+            transactionRepository.save(t);
+            feeTransactionRepository.save(new FeeTransaction(
+                t, 
+                getterService.getPaymentMethod(request.paymentMethod())
+            ));
             logger.info("Fee transaction saved");
             emailService.sendEmail(
                 account.getEmail(),
@@ -170,7 +183,7 @@ public class WithdrawalService {
                 "You have " + sa.getTransactionsWithoutFee() + " transactions free-fee"
             );
         }
-        account.setBalance(account.getBalance().subtract(amount));
+        account.setBalance(account.getBalance().subtract(request.amount()));
     }
 
     public void processToChekingAccount(Account account, BigDecimal amount) {
@@ -186,15 +199,15 @@ public class WithdrawalService {
         if (account.getBalance().compareTo(amount) < 0) {
             logger.info("The balace is insufficient");
             logger.info("Evaluate if the balance with the overdraft is sufficient");
-            BigDecimal reference = getBigDecimalReferences(account.getBalance()).add(ca.getOverdraftLimit());
+            BigDecimal reference = account.getBalance().add(ca.getOverdraftLimit());
             if (reference.compareTo(amount) < 0) {
                 logger.warn("Insufficiet overdraft to process the withdrawal");
                 throw new InvalidQuantity("Invalid data");
             }
             logger.info("Getting the new Overdraft");
-            BigDecimal newLimit = getBigDecimalReferences(reference).subtract(amount).subtract(account.getBalance());
+            BigDecimal newLimit = reference.subtract(amount).subtract(account.getBalance());
             logger.info("Getting the overdraft to use");
-            BigDecimal used = getBigDecimalReferences(ca.getOverdraftLimit()).subtract(newLimit);
+            BigDecimal used = ca.getOverdraftLimit().subtract(newLimit);
             logger.info("Processing the new data account");
             ca.setOverdraftLimit(newLimit);
             ca.setOverdraftUsed(ca.getOverdraftUsed().add(used));
@@ -205,10 +218,5 @@ public class WithdrawalService {
             logger.info("Sufficient balance to withdrawal");
             account.setBalance(account.getBalance().subtract(amount));
         }
-    }
-
-    private BigDecimal getBigDecimalReferences(BigDecimal sum) {
-        BigDecimal reference = new BigDecimal("0").add(sum);
-        return reference;
     }
 }

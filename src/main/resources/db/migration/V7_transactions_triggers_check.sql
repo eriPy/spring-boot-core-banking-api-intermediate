@@ -102,17 +102,17 @@ EXECUTE FUNCTION check_account_type('fixed_deposit_account');
 CREATE TRIGGER trg_account_to_fee
 BEFORE INSERT ON fee_transactions
 FOR EACH ROW
-EXECUTE FUNCTION check_account_type('savings_account', 'payroll_account', 'fixed_deposit_account');
+EXECUTE FUNCTION check_account_type('payroll_account', 'fixed_deposit_account');
 
 CREATE TRIGGER trg_account_to_interest_credit
 BEFORE INSERT ON interest_credit_transactions
 FOR EACH ROW
 EXECUTE FUNCTION check_account_type('checking_account', 'payroll_account');
 
-CREATE TRIGGER trg_interest_charge
-BEFORE INSERT ON interest_charge_transactions
+CREATE TRIGGER trg_interest_accrual
+BEFORE INSERT ON interest_accrual_transactions
 FOR EACH ROW
-EXECUTE FUNCTION check_account_type('payroll_account', 'fixed_deposit_account');
+EXECUTE FUNCTION check_account_type('checking_account', 'payroll_account', 'fixed_deposit_account');
 
 CREATE FUNCTION check_deposit()
 RETURNS trigger AS $$

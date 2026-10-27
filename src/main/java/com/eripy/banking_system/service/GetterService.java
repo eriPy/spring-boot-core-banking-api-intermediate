@@ -179,8 +179,8 @@ public class GetterService {
 
     public List<Account> getInformation(String email) {
         return getFromCache(
-            "user-" + email + "-session", 
-            "User information", 
+            "user-" + email + "-session",
+            "User information",
             new TypeReference<List<Account>>() {}, 
             () -> accountRepository.findByEmail(email));
     }

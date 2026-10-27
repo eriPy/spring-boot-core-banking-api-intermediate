@@ -63,8 +63,8 @@ public class BotDetectionConsumer {
             event.account().setAccountStatus(AccountStatus.frozen);
             accountRepository.save(event.account());
             blackListRepository.save(new BlackList(event.account()));
+            emailService.penalizationEmail(event.account(), null, "ban", "use of bots");
         }  
         logger.info("The user passed the bot test"); 
-        emailService.penalizationEmail(event.account(), null, "ban", "use of bots");
     } 
 }

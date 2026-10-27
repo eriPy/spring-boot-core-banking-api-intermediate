@@ -10,7 +10,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -41,10 +40,6 @@ public class FixedDepositAccount {
 
     @Column(name = "credit_interest_rate", insertable = false, updatable = false)
     private BigDecimal creditInterestRate;
-
-    @Column(name = "interest_receivable", insertable = false, nullable = false)
-    @DecimalMin(value = "0.00", message = "The interest receivable cannot be least than 0")
-    private BigDecimal interestReceivable;
 
     public FixedDepositAccount(Account account, LocalDateTime maturityDate) {
         this.account = account;

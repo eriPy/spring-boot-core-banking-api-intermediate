@@ -22,7 +22,7 @@ import lombok.Setter;
 @Setter 
 @NoArgsConstructor 
 @AllArgsConstructor 
-public class InterestChargeTransaction {
+public class InterestAccrualTransaction {
     @Id  
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -32,14 +32,28 @@ public class InterestChargeTransaction {
     @NotNull(message = "The transaction references is required")
     private Transaction transaction;
 
-    @Column(name = "previous_balance", insertable = false, updatable = false)
-    private BigDecimal previousBalance;
-
-    @Column(name = "ending_balance", insertable = false, updatable = false)
-    private BigDecimal endingBalance;
-
     @ManyToOne 
     @JoinColumn(name = "payment_method_id", updatable = false, nullable = false)
     @NotNull(message = "The payment method is required")
     private PaymentMethod paymentMethod;
+
+    @Column(name = "previous_balance", insertable = false, updatable = false)
+    private BigDecimal previousOverdraft;
+
+    @Column(name = "ending_balance", insertable = false, updatable = false)
+    private BigDecimal endingOverdraft;
+
+    @Column(name = "previous_balance", insertable = false, updatable = false)
+    private BigDecimal previousInterest;
+
+    @Column(name = "ending_balance", insertable = false, updatable = false)
+    private BigDecimal endingInterest;
+
+    public InterestAccrualTransaction(
+        Transaction transaction,
+        PaymentMethod paymentMethod
+    ) {
+        this.transaction = transaction;
+        this.paymentMethod = paymentMethod;
+    }
 }
