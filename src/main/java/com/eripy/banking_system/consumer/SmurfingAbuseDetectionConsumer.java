@@ -1,6 +1,5 @@
 package com.eripy.banking_system.consumer;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.slf4j.Logger;

@@ -9,9 +9,11 @@ VALUES ('deposit'),
     ('withdrawal'),
     ('transfer'),
     ('person'),
-    ('earning'),
-    ('account'),
-    ('close');
+    ('earnings'),
+    ('email'),
+    ('password'),
+    ('close'),
+    ('holder');
 
 CREATE TABLE IF NOT EXISTS operation_tokens (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -93,9 +95,9 @@ CREATE TABLE IF NOT EXISTS account_penalties_by_flagged (
 
 CREATE TABLE IF NOT EXISTS black_list (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    account_id BIGINT 
+    user_id BIGINT 
         NOT NULL
-        REFERENCES accounts(id),
+        REFERENCES users(id),
     adding_to TIMESTAMP 
         NOT NULL
         DEFAULT CURRENT_TIMESTAMP

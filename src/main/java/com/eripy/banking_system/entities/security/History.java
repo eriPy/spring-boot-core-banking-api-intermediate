@@ -3,6 +3,7 @@ package com.eripy.banking_system.entities.security;
 import com.eripy.banking_system.dto.account.IdEntity;
 import com.eripy.banking_system.entities.accounts.Account;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -26,7 +27,7 @@ public class History implements IdEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne 
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "account_id", insertable = false, updatable = false, unique = false)
     @NotNull(message = "The account references is required")
     private Account account;

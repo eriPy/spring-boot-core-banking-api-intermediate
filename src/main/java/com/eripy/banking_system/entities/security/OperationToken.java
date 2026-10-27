@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import com.eripy.banking_system.entities.accounts.Account;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -29,7 +30,7 @@ public class OperationToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "account_id", nullable = false, updatable = false)
     @NotNull(message = "The account references is required")
     private Account account;
@@ -45,7 +46,7 @@ public class OperationToken {
     @Column(name = "create_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @ManyToOne 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "token_type_id", updatable = false, nullable = false)
     @NotNull(message = "The token type is required")
     private TokenType tokenType;

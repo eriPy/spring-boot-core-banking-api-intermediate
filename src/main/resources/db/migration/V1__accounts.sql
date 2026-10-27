@@ -40,13 +40,14 @@ VALUES
     ('professional', 10000),
     ('businessman', 20000);
 
-CREATE TABLE IF NOT EXISTS accounts (
+CREATE TABLE IF NOT EXISTS users (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     account_holder VARCHAR(50) 
         NOT NULL,
     id_card VARCHAR(10) 
         NOT NULL
-        CHECK (id_card LIKE '%-_'),
+        CHECK (id_card LIKE '%-_')
+        UNIQUE,
     email VARCHAR(254) 
         NOT NULL
         CHECK (
@@ -56,9 +57,28 @@ CREATE TABLE IF NOT EXISTS accounts (
                 '%.gov', '%.sv', '%.mx', '%.co', '%.io',
                 '%.app', '%.info'
             ])
-        ), 
+        )
+        UNIQUE, 
     account_password VARCHAR(255)
         NOT NULL,
+    person_type_id BIGINT
+        NOT NULL
+        REFERENCES person_types(id),
+    monthly_earnings NUMERIC(19, 4)
+        NOT NULL,
+    registered_at TIMESTAMP
+        NOT NULL
+        DEFAULT CURRENT_TIMESTAMP,
+);
+
+CREATE TABLE IF NOT EXISTS accounts (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id BIGINT
+        NOT NULL
+        REFERENCES users(id),
+    account_card VARCHAR(12)
+        NOT NULL
+        UNIQUE,
     account_status TEXT
         NOT NULL
         CHECK (account_status IN (
@@ -77,15 +97,7 @@ CREATE TABLE IF NOT EXISTS accounts (
     create_at TIMESTAMP
         NOT NULL
         DEFAULT CURRENT_TIMESTAMP,
-    account_card VARCHAR(12)
-        NOT NULL
-        UNIQUE,
-    person_type_id BIGINT
-        NOT NULL
-        REFERENCES person_types(id),
-    monthly_earnings NUMERIC(19, 4)
-        NOT NULL,
-    UNIQUE (id_card, accounts_type_id, email)
+    UNIQUE (user_id, accounts_type_id)
 );
 
 CREATE TABLE IF NOT EXISTS savings_accounts (

@@ -5,6 +5,7 @@ import com.eripy.banking_system.dto.transactions.TransactionDetail;
 import com.eripy.banking_system.entities.accounts.Account;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -29,7 +30,7 @@ public class TransferTransaction implements TransactionDetail {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne 
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "transaction_id", nullable = false, updatable = false, unique = true)
     @NotNull(message = "The transaction references is required")
     private Transaction transaction;
@@ -40,7 +41,7 @@ public class TransferTransaction implements TransactionDetail {
     @Column(name = "ending_balance_payer", insertable = false, updatable = false)
     private BigDecimal endingBalancePayer;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "payee_id", updatable = false, nullable = false)
     private Account payee;
 
@@ -50,7 +51,7 @@ public class TransferTransaction implements TransactionDetail {
     @Column(name = "ending_balance_payee", insertable = false, updatable = false)
     private BigDecimal endingBalancePayee;
 
-    @ManyToOne 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "payment_method_id", updatable = false, nullable = false)
     @NotNull(message = "The payment method is required")
     private PaymentMethod paymentMethod;

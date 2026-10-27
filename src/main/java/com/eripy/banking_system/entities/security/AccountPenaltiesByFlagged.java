@@ -1,9 +1,9 @@
 package com.eripy.banking_system.entities.security;
 
 import com.eripy.banking_system.dto.account.IdEntity;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -29,7 +29,7 @@ public class AccountPenaltiesByFlagged implements IdEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne 
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "history_id", unique = true, updatable = false, nullable = false)
     @NotNull (message = "The history references is required")
     private History history;

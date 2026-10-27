@@ -1,9 +1,7 @@
 package com.eripy.banking_system.entities.ledger;
 
 import java.math.BigDecimal;
-
 import com.eripy.banking_system.entities.transactions.Transaction;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

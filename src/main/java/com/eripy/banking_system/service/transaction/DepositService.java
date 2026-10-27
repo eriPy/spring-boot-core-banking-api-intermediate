@@ -10,7 +10,6 @@ import com.eripy.banking_system.dto.transactions.DepositRequest;
 import com.eripy.banking_system.entities.accounts.Account;
 import com.eripy.banking_system.entities.accounts.CheckingAccount;
 import com.eripy.banking_system.entities.transactions.DepositTransaction;
-import com.eripy.banking_system.entities.transactions.InterestChargeTransaction;
 import com.eripy.banking_system.entities.transactions.PaymentMethod;
 import com.eripy.banking_system.entities.transactions.Transaction;
 import com.eripy.banking_system.exceptions.InconsistenceDataException;
@@ -18,7 +17,6 @@ import com.eripy.banking_system.exceptions.ResourceNotFoundException;
 import com.eripy.banking_system.repositories.accounts.AccountRepository;
 import com.eripy.banking_system.repositories.accounts.CheckingAccountRepository;
 import com.eripy.banking_system.repositories.transactions.DepositTransactionRepository;
-import com.eripy.banking_system.repositories.transactions.InterestChargeTransactionRepository;
 import com.eripy.banking_system.repositories.transactions.TransactionRepository;
 import com.eripy.banking_system.service.GetterService;
 import com.eripy.banking_system.service.account.AccountService;
@@ -35,7 +33,6 @@ public class DepositService {
     private final SecurityService securityService;
     private final AccountService accountService;
     private final CheckingAccountRepository checkingAccountRepository;
-    private final InterestChargeTransactionRepository interestChargeTransactionRepository;
     private static final Logger logger = LoggerFactory.getLogger(DepositService.class);
     
     public DepositService(
@@ -46,8 +43,7 @@ public class DepositService {
         DepositTransactionRepository depositTransactionRepository,
         SecurityService securityService,
         AccountService accountService,
-        CheckingAccountRepository checkingAccountRepository,
-        InterestChargeTransactionRepository interestChargeTransactionRepository
+        CheckingAccountRepository checkingAccountRepository
     ) {
         this.getterService = getterService;
         this.accountRepository = accountRepository;
@@ -57,7 +53,6 @@ public class DepositService {
         this.securityService = securityService;
         this.accountService = accountService;
         this.checkingAccountRepository = checkingAccountRepository;
-        this.interestChargeTransactionRepository = interestChargeTransactionRepository;
     }
 
     @Transactional 

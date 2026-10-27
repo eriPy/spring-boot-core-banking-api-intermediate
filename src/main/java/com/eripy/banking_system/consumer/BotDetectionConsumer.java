@@ -46,12 +46,12 @@ public class BotDetectionConsumer {
         if (event.account().getAccountType().getAccountType().equals("fixed_deposit_account")) return;
         logger.info("Evaluating transactions from the last minutes");
         List<Transaction> transactionsMinute2 = transactionRepository
-            .findByAccountAndTransactionDateBeforeOrderByTransactionDateDesc(
+            .findRecentTransactions(
                 event.account(), 
                 LocalDateTime.now().minusMinutes(2)
             );
         List<Transaction> transactionsMinute1 = transactionRepository
-            .findByAccountAndTransactionDateBeforeOrderByTransactionDateDesc(
+            .findRecentTransactions(
                 event.account(), 
                 LocalDateTime.now().minusMinutes(2)
             );
