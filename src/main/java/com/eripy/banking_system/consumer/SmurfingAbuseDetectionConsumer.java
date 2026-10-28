@@ -157,7 +157,7 @@ public class SmurfingAbuseDetectionConsumer {
         account.setAccountStatus(AccountStatus.closed);
         accountRepository.save(account);
         logger.info("Add user to black list");
-        blackListRepository.save(new BlackList(account));
+        blackListRepository.save(new BlackList(account.getUser()));
         logger.info("Add smurfing information");
         boolean apsExists = accountPenaltiesBySmurfingRepository.existsByHistory(history);
         if (aps != null || apsExists) {

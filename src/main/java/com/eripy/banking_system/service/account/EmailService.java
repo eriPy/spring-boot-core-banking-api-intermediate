@@ -62,7 +62,7 @@ public class EmailService {
         logger.info("Preparing the email for a penalization");
         SimpleMailMessage msg = new SimpleMailMessage();
         msg.setFrom("bank-account@gmail.com");
-        msg.setTo(account.getEmail());
+        msg.setTo(account.getUser().getEmail());
         String subject = ban.equals("ban") ? 
             "Notice of Permanent " + 
             account.getAccountType().getAccountType().replace("_", " ") + 
@@ -85,6 +85,6 @@ public class EmailService {
         sb.append("due to suspected " + reason);
         if (!ban.equals("ban")) sb.append("\nYour account will remain active until: " + legibleDate);
         msg.setText(sb.toString());
-        sendAndTest(msg, account.getEmail());
+        sendAndTest(msg, account.getUser().getEmail());
     }
 }

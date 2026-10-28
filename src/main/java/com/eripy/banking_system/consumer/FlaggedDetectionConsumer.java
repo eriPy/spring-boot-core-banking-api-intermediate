@@ -96,7 +96,7 @@ public class FlaggedDetectionConsumer {
             transfers, 
             LocalDateTime.now().minusMonths(1)
         );
-        BigDecimal earnings = event.account().getMonthlyEarnings();
+        BigDecimal earnings = event.account().getUser().getMonthlyEarnings();
         BigDecimal max = depositDetail.max().add(transferDetail.max());
         BigDecimal monthly = depositDetail.monthly().add(transferDetail.monthly());
         BigDecimal period = depositDetail.period().add(transferDetail.period());
@@ -174,7 +174,7 @@ public class FlaggedDetectionConsumer {
         account.setAccountStatus(AccountStatus.closed);
         accountRepository.save(account);
         logger.info("Add user to blacklist");
-        blackListRepository.save(new BlackList(account));
+        blackListRepository.save(new BlackList(account.getUser()));
         logger.info("Saving flagged data");
         accountPenaltiesByFlaggedRepository.save(apf);
         emailService.penalizationEmail(

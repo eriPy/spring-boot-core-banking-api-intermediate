@@ -53,16 +53,16 @@ public class BotDetectionConsumer {
         List<Transaction> transactionsMinute1 = transactionRepository
             .findRecentTransactions(
                 event.account(), 
-                LocalDateTime.now().minusMinutes(2)
+                LocalDateTime.now().minusMinutes(1)
             );
         if (transactionsMinute2.size() >= 7 || transactionsMinute1.size() >= 5) {
             logger.info("Warning: Suspicious Bot Activity Detected");
             logger.info("Add the banned user to Redis");
             securityService.saveInRedis(event.account());
             logger.info("Add the account to black list");
-            event.account().setAccountStatus(AccountStatus.frozen);
+            event.account().setAccountStatus(AccountStatus.closed);
             accountRepository.save(event.account());
-            blackListRepository.save(new BlackList(event.account()));
+            blackListRepository.save(new BlackList(event.account().getUser())); 
             emailService.penalizationEmail(event.account(), null, "ban", "use of bots");
         }  
         logger.info("The user passed the bot test"); 

@@ -76,7 +76,7 @@ public class SixDigitTokenService {
         TokenType tt = getterService.getTokenType(operation);
         operationTokenRepository.save(new OperationToken(account, token, tt));
         emailService.sendEmail(
-            account.getEmail(), 
+            account.getUser().getEmail(), 
             "Operation Token", 
             "You have requested a token to process a " + operation + 
             " on your " + account.getAccountType().getAccountType().replace("_", " ") + ".\n" +

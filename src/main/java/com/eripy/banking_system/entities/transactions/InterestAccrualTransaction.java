@@ -52,9 +52,17 @@ public class InterestAccrualTransaction {
 
     public InterestAccrualTransaction(
         Transaction transaction,
-        PaymentMethod paymentMethod
+        PaymentMethod paymentMethod,
+        BigDecimal previousOverdraft,
+        BigDecimal endingOverdraft,
+        BigDecimal previousInterest,
+        BigDecimal endingInterest
     ) {
         this.transaction = transaction;
         this.paymentMethod = paymentMethod;
+        this.previousOverdraft = previousOverdraft;
+        this.previousInterest = previousInterest;
+        this.endingOverdraft = endingOverdraft;
+        this.endingInterest = endingInterest;
     }
 }
