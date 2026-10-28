@@ -1,20 +1,28 @@
 package com.eripy.banking_system.service.account;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import com.eripy.banking_system.dto.account.AccountGeneral;
 import com.eripy.banking_system.dto.account.AccountInformationResponse;
 import com.eripy.banking_system.entities.accounts.Account;
 import com.eripy.banking_system.entities.accounts.AccountsType;
 import com.eripy.banking_system.entities.accounts.PersonType;
+import com.eripy.banking_system.entities.accounts.User;
 import com.eripy.banking_system.exceptions.FormatDataException;
 
 @Service 
 public class EvaluateFormatService {
+    private final SecureRandom random;
     private static final Logger logger = LoggerFactory.getLogger(EvaluateFormatService.class);
+
+    public EvaluateFormatService(SecureRandom random) {
+        this.random = random;
+    }
 
     public boolean evaluateAccountType(String accountType, List<AccountsType> types) {
         logger.info("Fetching data format");
@@ -28,49 +36,49 @@ public class EvaluateFormatService {
             .anyMatch(type -> type.getPersonType().equals(personType));
     }
 
-    public AccountsType getAccountTypeObject(String accountType, List<AccountsType> list) {
-        for (AccountsType type: list) {
-            if (type.getAccountType().equals(accountType)) {
-                return type;
-            }
-        }
-        logger.error("Something went wrong to get the accoun type object");
-        throw new FormatDataException("Problem");
-    }
-
-    public PersonType getPersonTypeObject(String accountType, List<PersonType> list) {
-        for (PersonType type: list) {
-            if (type.getPersonType().equals(accountType)) {
-                return type;
-            }
-        }
-        logger.error("Something went wrong to get the accoun type object");
-        throw new FormatDataException("Problem");
-    }
-
-    public AccountInformationResponse getInformationFormat(List<Account> accounts) {
-        List<AccountGeneral> general = new ArrayList<>();
+    public AccountInformationResponse getInformationFormat(User user, List<Account> accounts) {
+        List<Map<Long, String>> information = new ArrayList<>();
         for (Account account: accounts) {
-            String uncensoredAccountCard = account.getAccountCard();
-            String censoredAccountCard = "********" + uncensoredAccountCard
-                .substring(uncensoredAccountCard.length() - 4);
-            general.add(new AccountGeneral(
-                account.getId(),
-                censoredAccountCard,
-                account.getBalance(),
-                account.getMonthlyEarnings(),
-                account.getAccountType().getAccountType(),
-                String.valueOf(account.getAccountStatus())
-            ));
+            information.add(Map.of(account.getId(), account.getAccountType().getAccountType()));
         }
-        String uncensoredIdCard = accounts.get(0).getIdCard();
-        String censoredIdCard = "********-" + uncensoredIdCard.charAt(uncensoredIdCard.length() - 1);
+        String uncensoredIdCard = user.getIdCard();
+        String censoredIdCard = "********" + uncensoredIdCard.substring(uncensoredIdCard.length() - 2);
         return new AccountInformationResponse(
-            accounts.get(0).getAccountHolder(),
-            accounts.get(0).getEmail(),
+            user.getAccountHolder(),
+            user.getEmail(),
             censoredIdCard,
-            accounts.get(0).getPersonType().getPersonType(),
-            general
+            user.getPersonType().getPersonType(),
+            user.getMonthlyEarnings(),
+            information
         );
+    }
+
+    public void evaluateGeneralData(
+        List<AccountsType> ats,
+        List<PersonType> pts,
+        boolean invalidIdCard,
+        boolean invalidAccountType,
+        boolean invalidPersonType
+    ) {
+        if (!invalidIdCard) {
+            logger.warn("The id card is invalid");
+            throw new FormatDataException("Invalid data");
+        }
+        if (!invalidAccountType) {
+            logger.warn("The account type has no a valid formar");
+            throw new FormatDataException("Invalid data");
+        }
+        if (!invalidPersonType) {
+            logger.warn("The person type has no a valid formar");
+            throw new FormatDataException("Invalid data");
+        }   
+    }
+
+    public String generateEmailToken() {
+        byte[] bytes = new byte[32];
+        random.nextBytes(bytes);
+        return Base64.getUrlEncoder()
+            .withoutPadding()
+            .encodeToString(bytes);
     }
 }

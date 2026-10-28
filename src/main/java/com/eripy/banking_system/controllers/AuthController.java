@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.function.EntityResponse;
-import com.eripy.banking_system.dto.account.CreateAccountResponse;
 import com.eripy.banking_system.dto.account.CreateAccoutRequest;
 import com.eripy.banking_system.dto.account.SignInRequest;
 import com.eripy.banking_system.dto.account.SignUpRequest;
@@ -43,20 +42,17 @@ public class AuthController {
 
     @Operation(summary = "Use the data saved in sendEmailToken and create the account and return a JWT")
     @PostMapping("/sign-up")
-    public ResponseEntity<Map<String, Object>> singUp(
+    public ResponseEntity<Map<String, String>> singUp(
         @Valid 
         @RequestBody 
         CreateAccoutRequest request
     ) {
-        CreateAccountResponse response = authService.createAccount(request);
+        String token = authService.createAccount(request);
         return ResponseEntity
             .status(HttpStatus.CREATED)
             .body(Map.of(
                 "res", "Account was create", 
-                "data", Map.of(
-                    "token", response.token(),
-                    "id", response.id()
-                )
+                "token", token
             ));
     }
 

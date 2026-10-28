@@ -19,6 +19,7 @@ import com.eripy.banking_system.entities.accounts.CheckingAccount;
 import com.eripy.banking_system.entities.accounts.FixedDepositAccount;
 import com.eripy.banking_system.entities.accounts.PersonType;
 import com.eripy.banking_system.entities.accounts.SavingsAccount;
+import com.eripy.banking_system.entities.accounts.User;
 import com.eripy.banking_system.entities.security.AccountPenaltiesByFlagged;
 import com.eripy.banking_system.entities.security.History;
 import com.eripy.banking_system.entities.security.Overdraft;
@@ -33,6 +34,7 @@ import com.eripy.banking_system.repositories.accounts.CheckingAccountRepository;
 import com.eripy.banking_system.repositories.accounts.FixedDepositAccountRepository;
 import com.eripy.banking_system.repositories.accounts.PersonTypeRepository;
 import com.eripy.banking_system.repositories.accounts.SavingsAccountRepository;
+import com.eripy.banking_system.repositories.accounts.UserRepository;
 import com.eripy.banking_system.repositories.penalties.AccountPenaltiesByFlaggedRepository;
 import com.eripy.banking_system.repositories.penalties.HistoryRepository;
 import com.eripy.banking_system.repositories.penalties.OverdraftRepository;
@@ -61,6 +63,7 @@ public class GetterService {
     private final PenalizedReasonRepository penalizedReasonRepository;
     private final HistoryRepository historyRepository;
     private final AccountPenaltiesByFlaggedRepository accountPenaltiesByFlaggedRepository;
+    private final UserRepository userRepository;
     private static final Logger logger = LoggerFactory.getLogger(GetterService.class);
 
     public GetterService(
@@ -78,7 +81,8 @@ public class GetterService {
         TokenTypeRepository tokenTypeRepository,
         PenalizedReasonRepository penalizedReasonRepository,
         HistoryRepository historyRepository,
-        AccountPenaltiesByFlaggedRepository accountPenaltiesByFlaggedRepository
+        AccountPenaltiesByFlaggedRepository accountPenaltiesByFlaggedRepository,
+        UserRepository userRepository
     ) {
         this.redis = redis;
         this.mapper = mapper;
@@ -95,6 +99,7 @@ public class GetterService {
         this.penalizedReasonRepository = penalizedReasonRepository;
         this.historyRepository = historyRepository;
         this.accountPenaltiesByFlaggedRepository = accountPenaltiesByFlaggedRepository;
+        this.userRepository = userRepository;
     }
 
     public <T> void saveToRedis(String key, T data, Duration duration) throws JacksonException {
@@ -136,6 +141,38 @@ public class GetterService {
                 throw new ResourceNotFoundException("Not found");});
     }
 
+    public User getUserFromDataBase(Long id) {
+        return getFromDatabase(() -> userRepository.findById(id), "User");
+    }
+
+    public List<Account> getAccounts(User user) {
+        return accountRepository.findByUser(user);
+    }
+
+    private PersonType getPersonTypeFromDatabase(String pt) {
+        return getFromDatabase(() -> personTypeRepository.findByPersonType(pt), "Person type");
+    }
+
+    public PersonType getPersonTypeFromCache(String pt) {
+        return getFromCache(
+            pt, 
+            "Person type", 
+            new TypeReference<PersonType>() {}, 
+            () -> getPersonTypeFromDatabase(pt));
+    }
+
+    private AccountsType getAccountTypeFromDatabase(String at) {
+        return getFromDatabase(() -> accountsTypeRepository.findByAccountType(at), "Account type");
+    }
+
+    public AccountsType getAccountTypeFromCache(String at) {
+        return getFromCache(
+            at, 
+            "Account type", 
+            new TypeReference<AccountsType>() {}, 
+            () -> getAccountTypeFromDatabase(at));
+    }
+
     private PenalizedReason getPenalizedReasonFromDatabase(String reason) {
         return getFromDatabase(() -> penalizedReasonRepository.findByReason(reason), "Reason");
     }
@@ -175,14 +212,6 @@ public class GetterService {
             new TypeReference<TransactionType>() {}, 
             () -> getTransactionTypeFromDatabase(type));
     }    
-
-    public List<Account> getInformation(String email) {
-        return getFromCache(
-            "user-" + email + "-session",
-            "User information",
-            new TypeReference<List<Account>>() {}, 
-            () -> accountRepository.findByEmail(email));
-    }
 
     public Account getAccountFromDatabase(Long id) {
         return getFromDatabase(() -> accountRepository.findById(id), "Account");

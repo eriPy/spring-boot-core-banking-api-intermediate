@@ -3,21 +3,10 @@ package com.eripy.banking_system.repositories.accounts;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import com.eripy.banking_system.entities.accounts.Account;
-import com.eripy.banking_system.entities.accounts.AccountsType;
-import com.eripy.banking_system.entities.accounts.PersonType;
+import com.eripy.banking_system.entities.accounts.User;
 
 public interface AccountRepository extends JpaRepository<Account, Long> {
     boolean existsByAccountCard(String accountCard);
 
-    boolean existsByEmail(String email);
-
-    boolean existsByIdCard(String idCard);
-
-    boolean existsByEmailAndIdCard(String email, String idCard);
-
-    boolean existsByEmailAndIdCardAndAccountType(String email, String idCard, AccountsType accountType);
-
-    boolean existsByEmailAndIdCardAndPersonType(String email, String idCard, PersonType personType);
-
-    List<Account> findByEmail(String email);
+    List<Account> findByUser(User user);
 }
