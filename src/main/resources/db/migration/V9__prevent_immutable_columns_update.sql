@@ -46,25 +46,6 @@ BEFORE UPDATE OR DELETE ON interest_accrual_transactions
 FOR EACH ROW 
 EXECUTE FUNCTION inmutable_table();
 
-CREATE FUNCTION inmutable_column_on_accounts()
-RETURNS trigger AS $$
-BEGIN
-    IF TG_OP = 'DELETE' THEN
-        RAISE EXCEPTION 'ID card and Account card cannot be delete';
-    END IF;
-    IF NEW.id_card IS DISTINCT FROM OLD.id_card
-    OR NEW.account_card IS DISTINCT FROM OLD.account_card THEN
-        RAISE EXCEPTION 'ID card and Account card cannot be change';
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_inmutable_column_on_accounts
-BEFORE UPDATE OR DELETE ON accounts
-FOR EACH ROW 
-EXECUTE FUNCTION inmutable_column_on_accounts();
-
 CREATE FUNCTION inmutable_columns()
 RETURNS trigger AS $$
 BEGIN

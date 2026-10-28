@@ -1,9 +1,16 @@
 package com.eripy.banking_system.service.account;
 
+import java.math.BigDecimal;
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import com.eripy.banking_system.entities.accounts.Account;
+import com.eripy.banking_system.entities.accounts.FixedDepositAccount;
+import com.eripy.banking_system.exceptions.InconsistenceDataException;
+import com.eripy.banking_system.exceptions.InvalidQuantity;
 import com.eripy.banking_system.repositories.accounts.AccountRepository;
 
 @Service 
@@ -80,5 +87,41 @@ public class EvaluationService {
         }
         logger.info("Token was create");
         return sb.toString();
+    }
+
+    public void evaluateAccountWithdrawal(Account account, String operation) {
+        if (operation.equals("withdrawal")) {
+            if (account.getCheckingAccount() != null) {
+                if (account.getBalance().compareTo(BigDecimal.ZERO) == 0) {
+                    if (account.getCheckingAccount().getOverdraftLimit().compareTo(BigDecimal.ZERO) == 0) {
+                        logger.info("The user not has overdraft to process a withdrawal");
+                        throw new InvalidQuantity("Invalid data");
+                    }
+                }
+            } else {
+                if (account.getBalance().compareTo(BigDecimal.ZERO) == 0) {
+                    logger.info("Insufficient balance to generate the token");
+                    throw new InvalidQuantity("Invalid data");
+                }
+            }
+        }
+    }
+
+    public void evaluateFixedDepositDeposit(Account account, String operation, List<String> invalid) {
+        boolean isFixedDepositAccount = account.getFixedDepositAccount() != null;
+        boolean isInvalid = invalid.contains(operation);
+        if (isFixedDepositAccount && isInvalid) {
+            logger.info("Evaluating fixed deposit account conditions");
+            FixedDepositAccount fda = account.getFixedDepositAccount();
+            boolean validDeposit = operation.equals("deposit") && 
+                account.getBalance().compareTo(BigDecimal.ZERO) == 0;
+            boolean validWithdrawal = operation.equals("withdrawal") &&
+                account.getBalance().compareTo(BigDecimal.ZERO) != 0 &&
+                fda.getMaturiyDate().isBefore(LocalDateTime.now());
+            if (!validDeposit && !validWithdrawal) {
+                logger.info("Invalid operation to a fixed deposit account");
+                throw new InconsistenceDataException("Invalid data");
+            }
+        } 
     }
 }

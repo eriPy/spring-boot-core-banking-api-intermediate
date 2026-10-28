@@ -8,8 +8,6 @@ import org.springframework.stereotype.Service;
 import com.eripy.banking_system.dto.account.SignUpRequest;
 import com.eripy.banking_system.entities.accounts.Account;
 import com.eripy.banking_system.entities.accounts.AccountStatus;
-import com.eripy.banking_system.entities.accounts.AccountsType;
-import com.eripy.banking_system.entities.accounts.PersonType;
 import com.eripy.banking_system.exceptions.InconsistenceDataException;
 import com.eripy.banking_system.service.GetterService;
 

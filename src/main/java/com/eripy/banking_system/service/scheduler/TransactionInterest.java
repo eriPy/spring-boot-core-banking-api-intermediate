@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.eripy.banking_system.dto.transactions.Credit;
 import com.eripy.banking_system.entities.accounts.CheckingAccount;
+import com.eripy.banking_system.entities.accounts.PersonType;
 import com.eripy.banking_system.entities.transactions.InterestAccrualTransaction;
 import com.eripy.banking_system.entities.transactions.InterestCreditTransaction;
 import com.eripy.banking_system.entities.transactions.Transaction;
@@ -91,6 +92,9 @@ public class TransactionInterest {
             BigDecimal currentInterest = account.getInterestPayable().add(account.getOverdraftUsed());
             BigDecimal newInterest = currentInterest.multiply(account.getOverdraftInterestRate());
             BigDecimal totalInterest = currentInterest.add(newInterest).setScale(2, RoundingMode.HALF_EVEN);
+            PersonType personType = account.getAccount().getUser().getPersonType();
+            BigDecimal newOverdraftLimit = getterService.getOverdraft(personType).getOverdraftValue();
+            account.setOverdraftLimit(newOverdraftLimit);
             account.setOverdraftUsed(BigDecimal.ZERO);
             account.setInterestPayable(totalInterest);
             Transaction t = new Transaction(

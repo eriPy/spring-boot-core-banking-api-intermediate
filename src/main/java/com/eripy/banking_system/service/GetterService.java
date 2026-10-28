@@ -145,6 +145,10 @@ public class GetterService {
         return getFromDatabase(() -> userRepository.findById(id), "User");
     }
 
+    public User getUserFromDataBaseByEmail(String email) {
+        return getFromDatabase(() -> userRepository.findByEmail(email), "User");
+    }
+
     public List<Account> getAccounts(User user) {
         return accountRepository.findByUser(user);
     }

@@ -16,17 +16,13 @@ import com.eripy.banking_system.dto.account.SignInRequest;
 import com.eripy.banking_system.dto.account.SignUpRequest;
 import com.eripy.banking_system.entities.accounts.Account;
 import com.eripy.banking_system.entities.accounts.AccountsType;
-import com.eripy.banking_system.entities.accounts.CheckingAccount;
-import com.eripy.banking_system.entities.accounts.FixedDepositAccount;
-import com.eripy.banking_system.entities.accounts.PayrollAccount;
 import com.eripy.banking_system.entities.accounts.PersonType;
-import com.eripy.banking_system.entities.accounts.SavingsAccount;
+import com.eripy.banking_system.entities.accounts.User;
 import com.eripy.banking_system.exceptions.FormatDataException;
 import com.eripy.banking_system.exceptions.InconsistenceDataException;
 import com.eripy.banking_system.exceptions.InvalidDateException;
 import com.eripy.banking_system.exceptions.InvalidQuantity;
 import com.eripy.banking_system.exceptions.ResourceNotFoundException;
-import com.eripy.banking_system.repositories.accounts.AccountRepository;
 import com.eripy.banking_system.repositories.accounts.UserRepository;
 import com.eripy.banking_system.service.GetterService;
 import tools.jackson.core.JacksonException;
@@ -42,7 +38,6 @@ public class AuthService {
     private final ObjectMapper mapper;
     private final RedisTemplate<String, String> redis;
     private final PasswordEncoder encoder;
-    private final AccountRepository accountRepository;
     private final JwtService jwtService;
     private final SecretKey secretKey;
     private final SecurityService securityService;
@@ -62,7 +57,6 @@ public class AuthService {
         EmailService emailService,
         GetterService getterService,
         PasswordEncoder encoder,
-        AccountRepository accountRepository,
         JwtService jwtService,
         SecretKey secretKey,
         SecurityService securityService,
@@ -77,7 +71,6 @@ public class AuthService {
         this.emailService = emailService;
         this.getterService = getterService;
         this.encoder = encoder;
-        this.accountRepository = accountRepository;
         this.jwtService = jwtService;
         this.secretKey = secretKey;
         this.securityService = securityService;
@@ -158,15 +151,17 @@ public class AuthService {
             );
     }
 
+    @Transactional 
     public String login(SignInRequest request) {
         logger.info("Validating data");
-        if (!accountRepository.existsByEmail(request.email())) {
+        if (!userRepository.existsByEmail(request.email())) {
             logger.warn("The email not found on database");
             throw new FormatDataException("Invalid data");
         }
-        List<Account> data = getterService.getInformation(request.email());
+        User user = getterService.getUserFromDataBaseByEmail(request.email());
+        List<Account> data = getterService.getAccounts(user);
         for (Account account: data) accountService.unfreeze(account);
-        String password = data.get(0).getPassword();
+        String password = user.getPassword();
         if (!encoder.matches(request.password(), password)) {
             logger.warn("The password not match");
             throw new FormatDataException("Invalid data");

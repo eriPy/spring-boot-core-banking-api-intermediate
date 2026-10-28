@@ -12,6 +12,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.DecimalMin;
@@ -65,6 +66,15 @@ public class Account {
 
     @Column(name = "create_at", insertable = false, updatable = false)
     private LocalDateTime createAt;
+
+    @OneToOne(mappedBy = "account", fetch = FetchType.LAZY)
+    private CheckingAccount checkingAccount;
+
+    @OneToOne(mappedBy = "account", fetch = FetchType.LAZY)
+    private SavingsAccount savingsAccount;
+
+    @OneToOne(mappedBy = "account", fetch = FetchType.LAZY)
+    private FixedDepositAccount fixedDepositAccount;
 
     public Account(
         User user,

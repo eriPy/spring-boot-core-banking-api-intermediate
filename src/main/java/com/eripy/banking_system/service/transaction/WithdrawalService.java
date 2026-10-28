@@ -27,7 +27,6 @@ import com.eripy.banking_system.repositories.transactions.FeeTransactionReposito
 import com.eripy.banking_system.repositories.transactions.TransactionRepository;
 import com.eripy.banking_system.repositories.transactions.WithdrawalTransactionRepository;
 import com.eripy.banking_system.service.GetterService;
-import com.eripy.banking_system.service.account.AccountService;
 import com.eripy.banking_system.service.account.EmailService;
 import com.eripy.banking_system.service.account.SecurityService;
 
@@ -42,7 +41,6 @@ public class WithdrawalService {
     private final CheckingAccountRepository checkingAccountRepository;
     private final WithdrawalTransactionRepository withdrawalTransactionRepository;
     private final SecurityService securityService;
-    private final AccountService accountService;
     private final FeeTransactionRepository feeTransactionRepository;
     private static final Logger logger = LoggerFactory.getLogger(WithdrawalService.class);
 
@@ -56,7 +54,6 @@ public class WithdrawalService {
         CheckingAccountRepository checkingAccountRepository,
         WithdrawalTransactionRepository withdrawalTransactionRepository,
         SecurityService securityService,
-        AccountService accountService,
         FeeTransactionRepository feeTransactionRepository
     ) {
         this.getterService = getterService;
@@ -68,7 +65,6 @@ public class WithdrawalService {
         this.checkingAccountRepository = checkingAccountRepository;
         this.withdrawalTransactionRepository = withdrawalTransactionRepository;
         this.securityService = securityService;
-        this.accountService = accountService;
         this.feeTransactionRepository = feeTransactionRepository;
     }
 
@@ -99,9 +95,8 @@ public class WithdrawalService {
         transactionRepository.save(transaction);
         withdrawalTransactionRepository.save(new WithdrawalTransaction(transaction, pm));
         accountRepository.save(account);
-        accountService.setRedisUserInformation(account);
         emailService.sendEmail(
-            account.getEmail(),
+            account.getUser().getEmail(),
             "Withdrawal successful",
             "The withdrawal for $" + request.amount() + " has been made"
         );
@@ -132,7 +127,7 @@ public class WithdrawalService {
         account.setBalance(BigDecimal.ZERO);
         logger.info("Balance update");
         emailService.sendEmail(
-            account.getEmail(),
+            account.getUser().getEmail(),
             "Your fixed deposit account has been redeemed",
             "You have successfully collected the balance and interest earned from your fixed deposit account\n"
             + "The interest was been for $" + charge
@@ -168,7 +163,7 @@ public class WithdrawalService {
             ));
             logger.info("Fee transaction saved");
             emailService.sendEmail(
-                account.getEmail(),
+                account.getUser().getEmail(),
                 "Fee charged",
                 "You has been pay a fee for $" + sa.getExcessTransactionFee()
             );
@@ -178,7 +173,7 @@ public class WithdrawalService {
             savingsAccountRepository.save(sa);
             logger.info("Fee-free transaction recorded");
             emailService.sendEmail(
-                account.getEmail(),
+                account.getUser().getEmail(),
                 "Saving account transaction free-fee",
                 "You have " + sa.getTransactionsWithoutFee() + " transactions free-fee"
             );
@@ -190,7 +185,7 @@ public class WithdrawalService {
         logger.info("Search the cheking account of the user");
         CheckingAccount ca = getterService.getCheckingAccountFromDatabase(account.getId());
         logger.info("Evaluating the interest to charge");
-        Overdraft overdraft = getterService.getOverdraft(account.getPersonType());
+        Overdraft overdraft = getterService.getOverdraft(account.getUser().getPersonType());
         if (overdraft.getOverdraftValue().multiply(BigDecimal.valueOf(2)).compareTo(ca.getInterestPayable()) < 0) {
             logger.info("The account pays a lot of interest");
             throw new InvalidOperation("Invalid operation");
