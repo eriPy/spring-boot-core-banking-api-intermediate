@@ -30,8 +30,9 @@ DECLARE
 BEGIN
     SELECT act.account_type, pt.person_type INTO ac_ty, p_t
     FROM accounts a
+    JOIN users u ON u.id = a.user_id
     JOIN accounts_types act ON act.id = a.accounts_type_id
-    JOIN person_types pt ON pt.id = a.person_type_id
+    JOIN person_types pt ON pt.id = u.person_type_id
     WHERE a.id = NEW.id;    
 
     IF ac_ty = 'checking_account' THEN
@@ -51,6 +52,6 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_approve_overdraft
-AFTER INSERT OR UPDATE OF person_type_id ON accounts
+AFTER INSERT ON accounts
 FOR EACH ROW
 EXECUTE FUNCTION approve_overdraft();

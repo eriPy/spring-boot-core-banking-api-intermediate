@@ -17,11 +17,11 @@ import com.eripy.banking_system.entities.transactions.PaymentMethod;
 import com.eripy.banking_system.entities.transactions.Transaction;
 import com.eripy.banking_system.entities.transactions.TransactionType;
 import com.eripy.banking_system.entities.transactions.WithdrawalTransaction;
+import com.eripy.banking_system.exceptions.InconsistenceDataException;
 import com.eripy.banking_system.exceptions.InvalidOperation;
 import com.eripy.banking_system.exceptions.InvalidQuantity;
 import com.eripy.banking_system.repositories.accounts.AccountRepository;
 import com.eripy.banking_system.repositories.accounts.CheckingAccountRepository;
-import com.eripy.banking_system.repositories.accounts.FixedDepositAccountRepository;
 import com.eripy.banking_system.repositories.accounts.SavingsAccountRepository;
 import com.eripy.banking_system.repositories.transactions.FeeTransactionRepository;
 import com.eripy.banking_system.repositories.transactions.TransactionRepository;
@@ -37,7 +37,6 @@ public class WithdrawalService {
     private final TransactionRepository transactionRepository;
     private final SavingsAccountRepository savingsAccountRepository;
     private final AccountRepository accountRepository;
-    private final FixedDepositAccountRepository fixedDepositAccountRepository;
     private final CheckingAccountRepository checkingAccountRepository;
     private final WithdrawalTransactionRepository withdrawalTransactionRepository;
     private final SecurityService securityService;
@@ -50,7 +49,6 @@ public class WithdrawalService {
         TransactionRepository transactionRepository,
         SavingsAccountRepository savingsAccountRepository,
         AccountRepository accountRepository,
-        FixedDepositAccountRepository fixedDepositAccountRepository,
         CheckingAccountRepository checkingAccountRepository,
         WithdrawalTransactionRepository withdrawalTransactionRepository,
         SecurityService securityService,
@@ -61,7 +59,6 @@ public class WithdrawalService {
         this.transactionRepository = transactionRepository;
         this.savingsAccountRepository = savingsAccountRepository;
         this.accountRepository = accountRepository;
-        this.fixedDepositAccountRepository = fixedDepositAccountRepository;
         this.checkingAccountRepository = checkingAccountRepository;
         this.withdrawalTransactionRepository = withdrawalTransactionRepository;
         this.securityService = securityService;
@@ -103,34 +100,28 @@ public class WithdrawalService {
     }
 
     public void processToFixedDepositAccount(Account account, BigDecimal amount) {
-        logger.info("Search fixed deposit account");
-        FixedDepositAccount fda = getterService.getFixedDepositAccountFromDatabase(account.getId());
-        BigDecimal charge = fda.getInterestReceivable();
-        BigDecimal withdrawalAmount = account.getBalance().add(charge);
+        if (account.getBalance().compareTo(BigDecimal.ZERO) == 0) {
+            logger.info("This account has already withdrawn all of its balance");
+            throw new InconsistenceDataException("Invalid data");
+        }
+        FixedDepositAccount fda = account.getFixedDepositAccount();
         boolean isNotTime = fda.getMaturiyDate().isAfter(LocalDateTime.now());
-        boolean is0 = charge.compareTo(BigDecimal.ZERO) == 0;
-        if (is0 || isNotTime) {
-            String msg = !isNotTime ? 
-                "The interest has been charged" : 
-                "Cannot withdrawal yet";
-            logger.warn(msg);
+        if (isNotTime) {
+            logger.warn("Cannot withdrawal yet");
             throw new InvalidOperation("Invalid operation");
         }
-        boolean notAreEquals = withdrawalAmount.compareTo(amount) != 0;
+        boolean notAreEquals = account.getBalance().compareTo(amount) != 0;
         if (notAreEquals) {
-            logger.warn("The amount must be equals to the interest receivable");
+            logger.warn("The amount must be equals to the balance");
             throw new InvalidQuantity("Invalid data");
         }
-        fda.setInterestReceivable(BigDecimal.ZERO);
-        fixedDepositAccountRepository.save(fda);
         logger.warn("interest receivable charged");
         account.setBalance(BigDecimal.ZERO);
         logger.info("Balance update");
         emailService.sendEmail(
             account.getUser().getEmail(),
             "Your fixed deposit account has been redeemed",
-            "You have successfully collected the balance and interest earned from your fixed deposit account\n"
-            + "The interest was been for $" + charge
+            "You have successfully collected the balance and interest earned from your fixed deposit account"
         );
     }
 

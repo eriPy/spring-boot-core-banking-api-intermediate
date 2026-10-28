@@ -28,7 +28,7 @@ public class BlackList {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "account_id", updatable = false, nullable = false, unique = true)
+    @JoinColumn(name = "user_id", updatable = false, nullable = false, unique = true)
     private User user;
 
     @Column(name = "adding_to", insertable = false, updatable = false)

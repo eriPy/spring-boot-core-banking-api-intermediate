@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity 
-@Table(name = "interest_charge_transactions")
+@Table(name = "interest_accrual_transactions")
 @Getter 
 @Setter 
 @NoArgsConstructor 
@@ -38,16 +38,16 @@ public class InterestAccrualTransaction {
     @NotNull(message = "The payment method is required")
     private PaymentMethod paymentMethod;
 
-    @Column(name = "previous_balance", insertable = false, updatable = false)
+    @Column(name = "previous_overdraft", insertable = false, updatable = false)
     private BigDecimal previousOverdraft;
 
-    @Column(name = "ending_balance", insertable = false, updatable = false)
+    @Column(name = "ending_overdraft", insertable = false, updatable = false)
     private BigDecimal endingOverdraft;
 
-    @Column(name = "previous_balance", insertable = false, updatable = false)
+    @Column(name = "previous_interest", insertable = false, updatable = false)
     private BigDecimal previousInterest;
 
-    @Column(name = "ending_balance", insertable = false, updatable = false)
+    @Column(name = "ending_interest", insertable = false, updatable = false)
     private BigDecimal endingInterest;
 
     public InterestAccrualTransaction(
