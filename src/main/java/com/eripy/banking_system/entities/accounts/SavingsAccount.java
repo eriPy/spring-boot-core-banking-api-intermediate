@@ -1,6 +1,7 @@
 package com.eripy.banking_system.entities.accounts;
 
 import java.math.BigDecimal;
+import com.eripy.banking_system.dto.transactions.Credit;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -22,7 +23,7 @@ import lombok.Setter;
 @Setter 
 @NoArgsConstructor 
 @AllArgsConstructor 
-public class SavingsAccount {
+public class SavingsAccount implements Credit {
     @Id 
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

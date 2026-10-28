@@ -46,35 +46,6 @@ BEFORE INSERT OR UPDATE OF payment_method_id ON interest_charge_transactions
 FOR EACH ROW
 EXECUTE FUNCTION check_payment_method('system');
 
-CREATE FUNCTION check_time()
-RETURNS trigger AS $$
-DECLARE
-    last_time TIMESTAMP;
-    operation_id BIGINT;
-BEGIN
-    SELECT tt.id INTO operation_id
-    FROM transaction_types tt
-    WHERE tt.transaction_type = 'fee';
-
-    IF operation_id = NEW.transaction_type_id THEN
-        SELECT MAX(t.transaction_date) INTO last_time
-        FROM transactions t
-        WHERE t.account_id = NEW.account_id AND t.transaction_type_id = operation_id;
-
-        IF last_time IS NOT NULL AND last_time + INTERVAL '1 month' > CURRENT_TIMESTAMP THEN 
-            RAISE EXCEPTION 'Fee cannot be charged yet';
-        END IF;
-    END IF;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_check_time
-BEFORE INSERT ON transactions
-FOR EACH ROW
-EXECUTE FUNCTION check_time();
-
 CREATE FUNCTION check_account_type()
 RETURNS trigger AS $$
 DECLARE

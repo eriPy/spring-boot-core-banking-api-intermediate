@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS savings_accounts (
         DEFAULT 5,
     credit_interest_rate NUMERIC(5, 4)
         NOT NULL
-        DEFAULT 0.0100,
+        DEFAULT 0.0008,
     transactions_without_fee INTEGER 
         NOT NULL 
         DEFAULT 6
@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS checking_accounts (
         DEFAULT 0,
     overdraft_interest_rate NUMERIC(5, 4)
         NOT NULL
-        DEFAULT 0.0100,
+        DEFAULT 0.0006,
     management_fee NUMERIC(19, 4)
         NOT NULL
         DEFAULT 5,
@@ -155,5 +155,5 @@ CREATE TABLE IF NOT EXISTS fixed_deposit_account (
         NOT NULL,
     credit_interest_rate NUMERIC(5, 4)
         NOT NULL
-        DEFAULT 0.0750
+        DEFAULT 0.0136
 );

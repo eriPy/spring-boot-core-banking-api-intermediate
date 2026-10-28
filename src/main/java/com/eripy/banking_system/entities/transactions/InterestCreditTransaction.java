@@ -27,7 +27,7 @@ public class InterestCreditTransaction {
     @Id 
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "transaction_id", nullable = false, updatable = false, unique = true)
     @NotNull(message = "The transaction references is required")

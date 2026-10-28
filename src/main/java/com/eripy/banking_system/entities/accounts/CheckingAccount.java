@@ -43,7 +43,7 @@ public class CheckingAccount {
     @Column(name = "overdraft_interest_rate", insertable = false, updatable = false)
     private BigDecimal overdraftInterestRate;
 
-    @Column(name = "overdraft_interest_rate", insertable = false, updatable = false)
+    @Column(name = "management_fee", insertable = false, updatable = false)
     private BigDecimal managementFee;
 
     @Column(name = "interest_payable", insertable = false)
