@@ -1,11 +1,14 @@
 package com.eripy.banking_system.entities.accounts;
 
 import java.math.BigDecimal;
+import com.eripy.banking_system.entities.security.Overdraft;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -32,6 +35,9 @@ public class PersonType {
     @Column(name = "salary_cap", insertable  = false, updatable = false)    
     @DecimalMin(value = "0.01", message = "The salary cap is required")
     private BigDecimal salaryCap;
+
+    @OneToOne(mappedBy = "personType", fetch = FetchType.LAZY)
+    private Overdraft overdraft;
 
     public PersonType(String personType, BigDecimal salaryCap) {
         this.personType = personType;

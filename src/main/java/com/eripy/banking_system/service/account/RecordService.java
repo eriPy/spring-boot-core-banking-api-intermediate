@@ -74,7 +74,7 @@ public class RecordService {
                 savingsAccountRepository.save(new SavingsAccount(account));
                 break;
             case "checking_account":
-                checkingAccountRepository.save(new CheckingAccount(account));
+                checkingAccountRepository.save(new CheckingAccount(account, personType.getOverdraft().getOverdraftValue()));
                 break;
             case "payroll_account":
                 payrollAccountRepository.save(new PayrollAccount(account)); 

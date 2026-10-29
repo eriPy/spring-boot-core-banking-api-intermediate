@@ -33,7 +33,7 @@ public class CheckingAccount {
     @NotNull(message = "The account references is required")
     private Account account;
 
-    @Column(name = "overdraft_limit", insertable = false, updatable = false)
+    @Column(name = "overdraft_limit", nullable = false)
     private BigDecimal overdraftLimit;
 
     @Column(name = "overdraft_used", insertable = false)
@@ -49,7 +49,8 @@ public class CheckingAccount {
     @Column(name = "interest_payable", insertable = false)
     private BigDecimal interestPayable;
 
-    public CheckingAccount(Account account) {
+    public CheckingAccount(Account account, BigDecimal overdraftLimit) {
         this.account = account;
+        this.overdraftLimit = overdraftLimit;
     }
 }

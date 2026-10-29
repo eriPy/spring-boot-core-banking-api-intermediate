@@ -73,28 +73,29 @@ public class SmurfingAbuseDetectionConsumer {
     @Transactional 
     @KafkaListener(topics = "user-analized", groupId = "tokens")
     public void analyzingTokens(UserBehaviorAnalyzedEvent event) {
+        Account account = getterService.getAccountFromDatabase(event.id());
         logger.info("Evaluating tokens from the last 15 minutes");
         List<OperationToken> tokens = operationTokenRepository.
             findByAccountAndCreatedAtBeforeOrderByCreatedAtDesc(
-                event.account(), 
+                account, 
                 LocalDateTime.now().minusMinutes(15)
             );
         if (tokens.size() >= 8) {
             logger.info("Evaluating possible fraud");
             PenalizedReason pr = getterService.getPenalizedReason("smurfing");
             logger.info("Evaluating if user has a history");
-            History history = historyRepository.findByAccount(event.account())
+            History history = historyRepository.findByAccount(account)
                 .orElseGet(() -> {
                     logger.info("The user has no history");
-                    return new History(event.account());
+                    return new History(account);
                 });
             if (history.getId() == null) historyRepository.save(history);
             if (accountPenaltiesByFlaggedRepository.existsByHistory(history)) {
-                banAccount(event.account(), history, null);
+                banAccount(account, history, null);
                 return;
             }
             logger.info("User not found in Flagged table, evaluating possible smurfing");
-            String smurfing = redis.opsForValue().get("penalized-account-" + event.account().getId());
+            String smurfing = redis.opsForValue().get("penalized-account-" + account.getId());
             if (smurfing == null) {
                 logger.info("User not found in redis in process to penalized for smurfing");
                 AccountPenaltiesBySmurfing aps = accountPenaltiesBySmurfingRepository.
@@ -103,17 +104,17 @@ public class SmurfingAbuseDetectionConsumer {
                     new AccountPenaltiesBySmurfing(history, 0);
                 aps.setWarnings(aps.getWarnings() + 1);
                 if (aps.getId() != null && aps.getWarnings() % 3 == 0) { 
-                    frozenAccount(aps, event.account(), pr);
+                    frozenAccount(aps, account, pr);
                     return;
                 }
                 accountPenaltiesBySmurfingRepository.save(aps);
-                securityService.saveInRedis(event.account());
+                securityService.saveInRedis(account);
                 return;
             }
             logger.info("User found penalized for smurfing");
             AccountPenaltiesBySmurfing aps = accountPenaltiesBySmurfingRepository.findByHistory(history);
             aps.setWarnings(aps.getWarnings() + 1);
-            if(!frozenAccount(aps, event.account(), pr)) banAccount(event.account(), history, aps);
+            if(!frozenAccount(aps, account, pr)) banAccount(account, history, aps);
         }
         logger.info("The user passed the smurfing test");
     }

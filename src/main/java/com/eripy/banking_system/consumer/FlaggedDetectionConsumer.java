@@ -70,15 +70,16 @@ public class FlaggedDetectionConsumer {
     @Transactional 
     @KafkaListener(topics = "user-analized", groupId = "flagged")
     public void analizingFlagged(UserBehaviorAnalyzedEvent event) {
-        if (event.account().getAccountType().getAccountType().equals("fixed_deposit_account")) return;
+        Account account = getterService.getAccountFromDatabase(event.id());
+        if (account.getFixedDepositAccount() != null) return;
         logger.info("Evaluating the last transactions from the last 3 months");
         List<DepositTransaction> deposits = depositTransactionRepository
             .findLastPeriod(
                 LocalDateTime.now().minusMonths(3), 
-                event.account()
+                account
             );
         List<TransferTransaction> transfers = transferTransactionRepository.findLastPeriod(
-            event.account(), 
+            account, 
             LocalDateTime.now().minusMonths(3)
         );
         logger.info("Evaluating last earnings");
@@ -96,7 +97,7 @@ public class FlaggedDetectionConsumer {
             transfers, 
             LocalDateTime.now().minusMonths(1)
         );
-        BigDecimal earnings = event.account().getUser().getMonthlyEarnings();
+        BigDecimal earnings = account.getUser().getMonthlyEarnings();
         BigDecimal max = depositDetail.max().add(transferDetail.max());
         BigDecimal monthly = depositDetail.monthly().add(transferDetail.monthly());
         BigDecimal period = depositDetail.period().add(transferDetail.period());
@@ -116,18 +117,18 @@ public class FlaggedDetectionConsumer {
             return;
         }
         logger.info("Getting the user history information");
-        History history = getterService.getOrCreateHistory(event.account(), "History");
+        History history = getterService.getOrCreateHistory(account, "History");
         logger.info("Search the user account flagged history");
         AccountPenaltiesByFlagged apf = getterService
             .getOrCreateAccountPenaltiesByFlagged(history, "Flagged history");
         apf.setSuspicions(apf.getSuspicions() + 1);
-        securityService.saveInRedis(event.account());
+        securityService.saveInRedis(account);
         if (ban) {
-            banUser(event.account(), apf);
+            banUser(account, apf);
             return;
         }
         if (warning) {
-            frozenUser(event.account(), apf);
+            frozenUser(account, apf);
             return;
         }
     }

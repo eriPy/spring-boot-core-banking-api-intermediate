@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS accounts_types (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     account_type TEXT
         NOT NULL
+        UNIQUE
         CHECK (account_type IN (
             'savings_account', 
             'checking_account', 
@@ -21,6 +22,7 @@ CREATE TABLE IF NOT EXISTS person_types (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     person_type TEXT
         NOT NULL
+        UNIQUE
         CHECK (person_type IN (
             'student',  
             'unemployed', 
@@ -39,6 +41,28 @@ VALUES
     ('employed', 5000),
     ('professional', 10000),
     ('businessman', 20000);
+
+CREATE TABLE IF NOT EXISTS overdrafts (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    person_type_id BIGINT  
+        NOT NULL
+        UNIQUE
+        REFERENCES person_types(id),
+    overdraft_value NUMERIC(19, 4)
+        NOT NULL
+        UNIQUE
+);
+
+INSERT INTO overdrafts (person_type_id, overdraft_value)
+SELECT pt.id, v.overdraft_value
+FROM (VALUES
+    ('student', 200),
+    ('unemployed', 500),
+    ('employed', 1000),
+    ('professional', 2000),
+    ('businessman', 5000)
+) AS v(person_type, overdraft_value)
+JOIN person_types pt ON pt.person_type = v.person_type;
 
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -104,6 +128,7 @@ CREATE TABLE IF NOT EXISTS savings_accounts (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     account_id BIGINT 
         NOT NULL
+        UNIQUE
         REFERENCES accounts(id),
     excess_transaction_fee NUMERIC(19, 4)
         NOT NULL
@@ -121,6 +146,7 @@ CREATE TABLE IF NOT EXISTS checking_accounts (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     account_id BIGINT 
         NOT NULL
+        UNIQUE
         REFERENCES accounts(id),
     overdraft_limit NUMERIC(19, 4)
         NOT NULL,
@@ -143,6 +169,7 @@ CREATE TABLE IF NOT EXISTS payroll_accounts (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     account_id BIGINT 
         NOT NULL
+        UNIQUE
         REFERENCES accounts(id)
 );
 
@@ -150,6 +177,7 @@ CREATE TABLE IF NOT EXISTS fixed_deposit_account (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     account_id BIGINT 
         NOT NULL
+        UNIQUE
         REFERENCES accounts(id),
     maturity_date TIMESTAMP
         NOT NULL,

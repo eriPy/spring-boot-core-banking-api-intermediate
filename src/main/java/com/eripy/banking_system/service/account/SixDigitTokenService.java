@@ -47,7 +47,7 @@ public class SixDigitTokenService {
         List<String> invalid = List.of("withdrawal", "deposit", "transfer");
         evaluationService.evaluateAccountWithdrawal(account, operation);
         evaluationService.evaluateFixedDepositDeposit(account, operation, invalid);
-        analizedProducer.userAnalized(new UserBehaviorAnalyzedEvent(account));
+        analizedProducer.userAnalized(new UserBehaviorAnalyzedEvent(id));
         String token = evaluationService.createToken();
         TokenType tt = getterService.getTokenType(operation);
         operationTokenRepository.save(new OperationToken(account, token, tt));
