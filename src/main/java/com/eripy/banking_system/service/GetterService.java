@@ -206,7 +206,7 @@ public class GetterService {
     }
 
     private TransactionType getTransactionTypeFromDatabase(String type) {
-        return getFromDatabase(() -> transactionTypeRepository.findByTransactionType(type), "Transaction");
+        return getFromDatabase(() -> transactionTypeRepository.findByTransactionType(type), "Transaction type");
     }
 
     public TransactionType getTransactionType(String type) {

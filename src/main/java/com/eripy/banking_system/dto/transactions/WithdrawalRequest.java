@@ -2,9 +2,7 @@ package com.eripy.banking_system.dto.transactions;
 
 import java.math.BigDecimal;
 import java.util.List;
-
 import com.eripy.banking_system.exceptions.FormatDataException;
-
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

@@ -13,6 +13,7 @@ import com.eripy.banking_system.entities.accounts.FixedDepositAccount;
 import com.eripy.banking_system.entities.accounts.SavingsAccount;
 import com.eripy.banking_system.entities.security.Overdraft;
 import com.eripy.banking_system.entities.transactions.FeeTransaction;
+import com.eripy.banking_system.entities.transactions.InterestAccrualTransaction;
 import com.eripy.banking_system.entities.transactions.PaymentMethod;
 import com.eripy.banking_system.entities.transactions.Transaction;
 import com.eripy.banking_system.entities.transactions.TransactionType;
@@ -24,6 +25,7 @@ import com.eripy.banking_system.repositories.accounts.AccountRepository;
 import com.eripy.banking_system.repositories.accounts.CheckingAccountRepository;
 import com.eripy.banking_system.repositories.accounts.SavingsAccountRepository;
 import com.eripy.banking_system.repositories.transactions.FeeTransactionRepository;
+import com.eripy.banking_system.repositories.transactions.InterestAccrualTransactionRepository;
 import com.eripy.banking_system.repositories.transactions.TransactionRepository;
 import com.eripy.banking_system.repositories.transactions.WithdrawalTransactionRepository;
 import com.eripy.banking_system.service.GetterService;
@@ -41,6 +43,7 @@ public class WithdrawalService {
     private final WithdrawalTransactionRepository withdrawalTransactionRepository;
     private final SecurityService securityService;
     private final FeeTransactionRepository feeTransactionRepository;
+    private final InterestAccrualTransactionRepository interestAccrualTransactionRepository;
     private static final Logger logger = LoggerFactory.getLogger(WithdrawalService.class);
 
     public WithdrawalService(
@@ -52,7 +55,8 @@ public class WithdrawalService {
         CheckingAccountRepository checkingAccountRepository,
         WithdrawalTransactionRepository withdrawalTransactionRepository,
         SecurityService securityService,
-        FeeTransactionRepository feeTransactionRepository
+        FeeTransactionRepository feeTransactionRepository,
+        InterestAccrualTransactionRepository interestAccrualTransactionRepository
     ) {
         this.getterService = getterService;
         this.emailService = emailService;
@@ -63,6 +67,7 @@ public class WithdrawalService {
         this.withdrawalTransactionRepository = withdrawalTransactionRepository;
         this.securityService = securityService;
         this.feeTransactionRepository = feeTransactionRepository;
+        this.interestAccrualTransactionRepository = interestAccrualTransactionRepository;
     }
 
     @Transactional 
@@ -88,6 +93,7 @@ public class WithdrawalService {
                 processToChekingAccount(account, request.amount());
                 break;
         }
+        
         Transaction transaction = new Transaction(account, tt, request.amount());
         transactionRepository.save(transaction);
         withdrawalTransactionRepository.save(new WithdrawalTransaction(transaction, pm));
@@ -174,7 +180,7 @@ public class WithdrawalService {
 
     public void processToChekingAccount(Account account, BigDecimal amount) {
         logger.info("Search the cheking account of the user");
-        CheckingAccount ca = getterService.getCheckingAccountFromDatabase(account.getId());
+        CheckingAccount ca = account.getCheckingAccount();
         logger.info("Evaluating the interest to charge");
         Overdraft overdraft = getterService.getOverdraft(account.getUser().getPersonType());
         if (overdraft.getOverdraftValue().multiply(BigDecimal.valueOf(2)).compareTo(ca.getInterestPayable()) < 0) {
@@ -184,13 +190,14 @@ public class WithdrawalService {
         logger.warn("Evaluate the available quantity");
         if (account.getBalance().compareTo(amount) < 0) {
             logger.info("The balace is insufficient");
+            BigDecimal previusOverdraftUsed = ca.getOverdraftUsed();
             logger.info("Evaluate if the balance with the overdraft is sufficient");
             BigDecimal reference = account.getBalance().add(ca.getOverdraftLimit());
             if (reference.compareTo(amount) < 0) {
                 logger.warn("Insufficiet overdraft to process the withdrawal");
                 throw new InvalidQuantity("Invalid data");
             }
-            logger.info("Getting the new Overdraft");
+            logger.info("Getting the new Overdraft used");
             BigDecimal newLimit = reference.subtract(amount).subtract(account.getBalance());
             logger.info("Getting the overdraft to use");
             BigDecimal used = ca.getOverdraftLimit().subtract(newLimit);
@@ -199,7 +206,26 @@ public class WithdrawalService {
             ca.setOverdraftUsed(ca.getOverdraftUsed().add(used));
             account.setBalance(BigDecimal.ZERO);
             checkingAccountRepository.save(ca);
-            
+            Transaction t = new Transaction(
+                account, 
+                getterService.getTransactionType("interest_accrual"),
+                used
+            );
+            transactionRepository.save(t);
+            interestAccrualTransactionRepository.save(new InterestAccrualTransaction(
+                t, 
+                getterService.getPaymentMethod("system"), 
+                previusOverdraftUsed, 
+                used.add(previusOverdraftUsed), 
+                ca.getInterestPayable(), 
+                ca.getInterestPayable()
+            ));
+            emailService.sendEmail(
+                account.getUser().getEmail(), 
+                "overdraft usage", 
+                "You have used $" + used + 
+                " as an overdraft; your current overdraft is $" + used.add(previusOverdraftUsed)
+            );
         } else {
             logger.info("Sufficient balance to withdrawal");
             account.setBalance(account.getBalance().subtract(amount));
