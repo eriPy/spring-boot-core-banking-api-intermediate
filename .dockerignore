@@ -1,7 +1,2 @@
-.vscode/
-target/
-src/main/resources/application.properties
-.git/
-.idea/
-*.iml
 .env
+.git/

@@ -1,0 +1,5 @@
+.vscode/
+target/
+src/main/resources/application.properties
+.idea/
+*.iml

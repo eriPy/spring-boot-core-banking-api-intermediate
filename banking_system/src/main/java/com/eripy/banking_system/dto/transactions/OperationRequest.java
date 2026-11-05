@@ -9,7 +9,16 @@ public record OperationRequest(
     String operation
 ) {
     public OperationRequest {
-        List<String> valid = List.of("deposit", "withdrawal", "transfer", "person", "earning", "account", "close");
+        List<String> valid = List.of(
+            "deposit",
+            "withdrawal", 
+            "transfer", 
+            "person", 
+            "earnings", 
+            "email", 
+            "password",
+            "close", 
+            "holder");
         if (operation == null || !valid.contains(operation)) {
             throw new FormatDataException("Invalid data");
         }

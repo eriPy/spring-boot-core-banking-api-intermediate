@@ -15,8 +15,8 @@ import com.eripy.banking_system.dto.account.AccountInformationResponse;
 import com.eripy.banking_system.dto.manageAccount.AccountHolder;
 import com.eripy.banking_system.dto.manageAccount.MonthlyEarnings;
 import com.eripy.banking_system.dto.manageAccount.Password;
-import com.eripy.banking_system.dto.manageAccount.PersonType;
 import com.eripy.banking_system.dto.manageAccount.SetEmail;
+import com.eripy.banking_system.dto.manageAccount.SetPersonType;
 import com.eripy.banking_system.dto.transactions.OperationRequest;
 import com.eripy.banking_system.service.account.AccountService;
 import com.eripy.banking_system.service.account.SixDigitTokenService;
@@ -72,7 +72,7 @@ public class AccountController {
         Authentication authentication,
         @Valid 
         @RequestBody 
-        PersonType request
+        SetPersonType request
     ) {
         Long id = Long.parseLong(authentication.getName());
         sixDigitTokenService.evaluateSixDigitToken(request.token(), id, "person");
