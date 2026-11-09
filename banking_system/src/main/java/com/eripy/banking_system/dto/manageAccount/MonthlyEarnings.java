@@ -12,5 +12,7 @@ public record MonthlyEarnings(
     String token,
     @DecimalMin(value = "0.01", message = "The monthly earnings cannot be less than 0.01")
     @NotNull(message = "The monthly earnings are required")
-    BigDecimal monthlyEarnings
+    BigDecimal monthlyEarnings,
+    @NotBlank(message = "The account type is required")
+    String accountType
 ) {}

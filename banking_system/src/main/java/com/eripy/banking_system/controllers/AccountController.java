@@ -4,14 +4,12 @@ import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.eripy.banking_system.dto.account.AccountInformationResponse;
 import com.eripy.banking_system.dto.manageAccount.AccountHolder;
 import com.eripy.banking_system.dto.manageAccount.MonthlyEarnings;
 import com.eripy.banking_system.dto.manageAccount.Password;
@@ -37,15 +35,6 @@ public class AccountController {
     ) {
         this.accountService = accountService;
         this.sixDigitTokenService = sixDigitTokenService;
-    }
-
-    @Operation(summary = "Request token and return the user information")
-    @GetMapping("/me")
-    public AccountInformationResponse getMyInfo(
-        Authentication authentication
-    ) {
-        Long id = Long.parseLong(authentication.getName());
-        return accountService.getUserInformation(id);
     }
 
     @Operation(summary = "Request user information and generate a six digit token to process a sensitive operation")

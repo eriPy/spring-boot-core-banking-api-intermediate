@@ -16,7 +16,9 @@ public record DepositRequest(
     @Size(min = 6, max = 6, message = "The token must has 6 characters long")
     String token,
     @NotBlank(message = "The payment is required")
-    String paymentMethod
+    String paymentMethod,
+    @NotBlank(message = "The account type is required")
+    String accountType
 ) {
     public DepositRequest {
         List<String> valid = List.of("cash", "atm", "bank_teller", "check");

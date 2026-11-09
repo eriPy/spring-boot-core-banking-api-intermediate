@@ -27,4 +27,19 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
         TransactionType transactionType,
         LocalDateTime transactionDate
     );
+
+    @Query("""
+        SELECT t
+        FROM Transaction t
+        LEFT JOIN FETCH t.transfer tr
+        LEFT JOIN FETCH tr.payee
+        WHERE (
+            t.account = :account
+            AND t.transactionType.transactionType IN ('withdrawal', 'deposit', 'transfer')
+        ) OR (
+            tr.payee = :account
+        )
+        ORDER BY t.transactionDate DESC
+    """)
+    List<Transaction> findAccounTransactions(Account account);
 }

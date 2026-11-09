@@ -9,5 +9,7 @@ public record Password(
     String token,
     @NotBlank(message = "The password is required")
     @Size(min = 8, message = "The password must be at least 8 characters long")
-    String password
+    String password,
+    @NotBlank(message = "The account type is required")
+    String accountType
 ) {}

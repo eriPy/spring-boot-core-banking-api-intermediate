@@ -2,14 +2,12 @@ package com.eripy.banking_system.service.account;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.eripy.banking_system.dto.account.AccountInformationResponse;
 import com.eripy.banking_system.dto.manageAccount.AccountHolder;
 import com.eripy.banking_system.dto.manageAccount.MonthlyEarnings;
 import com.eripy.banking_system.dto.manageAccount.Password;
@@ -22,7 +20,6 @@ import com.eripy.banking_system.entities.accounts.CheckingAccount;
 import com.eripy.banking_system.entities.accounts.User;
 import com.eripy.banking_system.entities.security.PenalizedAccount;
 import com.eripy.banking_system.exceptions.InconsistenceDataException;
-import com.eripy.banking_system.exceptions.ResourceNotFoundException;
 import com.eripy.banking_system.repositories.accounts.AccountRepository;
 import com.eripy.banking_system.repositories.accounts.CheckingAccountRepository;
 import com.eripy.banking_system.repositories.accounts.UserRepository;
@@ -34,7 +31,6 @@ import com.eripy.banking_system.service.GetterService;
 public class AccountService {
     private final GetterService getterService;
     private final AccountRepository accountRepository;
-    private final EvaluateFormatService evaluateFormatService;
     private final PenalizedAccountRepository penalizedAccountRepository;
     private final BlackListRepository blackListRepository;
     private final EmailService emailService;
@@ -45,7 +41,6 @@ public class AccountService {
     public AccountService(
         GetterService getterService,
         AccountRepository accountRepository,
-        EvaluateFormatService evaluateFormatService,
         PenalizedAccountRepository penalizedAccountRepository,
         BlackListRepository blackListRepository,
         EmailService emailService,
@@ -54,24 +49,11 @@ public class AccountService {
     ) {
         this.getterService = getterService;
         this.accountRepository = accountRepository;
-        this.evaluateFormatService = evaluateFormatService;
         this.penalizedAccountRepository = penalizedAccountRepository;
         this.blackListRepository = blackListRepository;
         this.emailService = emailService;
         this.userRepository = userRepository;
         this.checkingAccountRepository = checkingAccountRepository;
-    }
-
-    public AccountInformationResponse getUserInformation(Long id) {
-        logger.info("Search the user information");
-        if (!accountRepository.existsById(id)) {
-            logger.warn("The user not exists");
-            throw new ResourceNotFoundException("Invalid token");
-        }
-        logger.info("Search the user");
-        User information = getterService.getUserFromDataBase(id);
-        List<Account> accounts = getterService.getAccounts(information);
-        return evaluateFormatService.getInformationFormat(information, accounts);
     }
 
     public void unfreeze(Account account) {

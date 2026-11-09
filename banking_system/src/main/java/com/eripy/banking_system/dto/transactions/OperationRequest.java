@@ -6,7 +6,9 @@ import jakarta.validation.constraints.NotBlank;
 
 public record OperationRequest(
     @NotBlank 
-    String operation
+    String operation,
+    @NotBlank(message = "The account type is required")
+    String accountType
 ) {
     public OperationRequest {
         List<String> valid = List.of(

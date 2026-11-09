@@ -10,7 +10,7 @@ function VerificationToNew() {
     const navigate = useNavigate();
     const URL = import.meta.env.VITE_API_URL;
 
-    const [idCardNumber, setIdCardNumber] = useState("");
+    const [idCard, setIdCard] = useState("");
     const [email, setEmail] = useState("");
     const [accountType, setAccountType] = useState<
         "savings_account" | "checking_account" | "payroll_account" | "fixed_deposit_account"
@@ -29,12 +29,12 @@ function VerificationToNew() {
 
     const sendDataToCreateNewUser = async(e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (conditionAdv(!evaluateIdCard(idCardNumber), setAdvCredentials)) return;
+        if (conditionAdv(!evaluateIdCard(idCard), setAdvCredentials)) return;
         const isInconsistence: boolean = accountType === "payroll_account" && 
             (personType === "student" || personType === "unemployed");
         if (conditionAdv(isInconsistence, setInconsistence)) return;
         const res = await fetch(`${URL}/auth/register`, createJson("POST", 
-            {idCardNumber, email, accountType, personType}));
+            {idCard, email, accountType, personType}));
         if (conditionAdv(res.status === 429, setAdv429)) return;
         if (!res.ok) {
             showAdv(setAdvUser);
@@ -42,7 +42,7 @@ function VerificationToNew() {
         }
         setAccountTypeStore(accountType);
         setPersonTypeStore(personType);
-        resetStrings(setIdCardNumber, setEmail);
+        resetStrings(setIdCard, setEmail);
         setAccountType("savings_account");
         setPersonType("student");
         navigate("/create-user");
@@ -63,8 +63,8 @@ function VerificationToNew() {
                     <input
                         type="text"
                         id="id-card-number-field"
-                        value={idCardNumber}
-                        onChange={(e) => setIdCardNumber(e.target.value)}
+                        value={idCard}
+                        onChange={(e) => setIdCard(e.target.value)}
                         placeholder="00000000-0"
                     />
                 </div>

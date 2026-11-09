@@ -11,6 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
@@ -46,6 +47,9 @@ public class Transaction {
 
     @Column(name = "transaction_date", insertable = false, updatable = false)
     private LocalDateTime transactionDate;
+
+    @OneToOne(mappedBy = "transaction", fetch = FetchType.LAZY)
+    private TransferTransaction transfer;
 
     public Transaction(
         Account account,
