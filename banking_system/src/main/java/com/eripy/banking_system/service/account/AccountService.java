@@ -36,6 +36,7 @@ public class AccountService {
     private final EmailService emailService;
     private final UserRepository userRepository;
     private final CheckingAccountRepository checkingAccountRepository;
+    private final DashboardService dashboardService;
     private static final Logger logger = LoggerFactory.getLogger(AccountService.class);
 
     public AccountService(
@@ -45,7 +46,8 @@ public class AccountService {
         BlackListRepository blackListRepository,
         EmailService emailService,
         UserRepository userRepository,
-        CheckingAccountRepository checkingAccountRepository
+        CheckingAccountRepository checkingAccountRepository,
+        DashboardService dashboardService
     ) {
         this.getterService = getterService;
         this.accountRepository = accountRepository;
@@ -54,6 +56,7 @@ public class AccountService {
         this.emailService = emailService;
         this.userRepository = userRepository;
         this.checkingAccountRepository = checkingAccountRepository;
+        this.dashboardService = dashboardService;
     }
 
     public void unfreeze(Account account) {
@@ -87,7 +90,7 @@ public class AccountService {
         BiConsumer<User, T> setter,
         String topic,
         Account references
-    ) {
+    ) {  
         logger.info("Searching for the account in database");
         Account account = references != null ? references : getterService.getAccountFromDatabase(id);
         logger.info("Comparing the " + topic +  " with the registered " + topic);
@@ -100,6 +103,7 @@ public class AccountService {
         setter.accept(user, newValue);
         userRepository.save(user);
         logger.info("The " + topic + " was updated in the database");
+        if (dashboardService.userHasDataInRedis(id))
         emailService.sendEmail(
             user.getEmail(), 
             topic + "was updated", 
@@ -189,5 +193,13 @@ public class AccountService {
             "Account " + account.getAccountType() + " closure", 
             "Your account was successfully closed. You can no longer use your account"
         );
+    }
+
+    public void searchUser() {
+
+    }
+
+    public void createNewAccount() {
+        
     }
 }

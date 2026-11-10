@@ -15,5 +15,6 @@ public record UserInformation(
     LocalDateTime maturityTime,
     List<String> accountTypes,
     List<String> accountCards,
+    List<BigDecimal> balances,
     List<UserTransactions> userTransactions
 ) {}

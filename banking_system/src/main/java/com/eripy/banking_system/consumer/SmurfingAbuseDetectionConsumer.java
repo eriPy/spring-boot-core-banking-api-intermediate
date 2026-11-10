@@ -112,9 +112,11 @@ public class SmurfingAbuseDetectionConsumer {
                 return;
             }
             logger.info("User found penalized for smurfing");
+            redis.delete("user-" + account.getUser().getEmail());
             AccountPenaltiesBySmurfing aps = accountPenaltiesBySmurfingRepository.findByHistory(history);
             aps.setWarnings(aps.getWarnings() + 1);
             if(!frozenAccount(aps, account, pr)) banAccount(account, history, aps);
+            return;
         }
         logger.info("The user passed the smurfing test");
     }

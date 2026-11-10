@@ -43,7 +43,7 @@ public class SixDigitTokenService {
 
     public void generateSixDigitToken(Long id, String operation) {
         logger.info("Evaluate the account data");
-        Account account = securityService.evaluateIfPass(id);
+        Account account = getAccount(securityService.evaluateIfPass(id), id);
         List<String> invalid = List.of("withdrawal", "deposit", "transfer");
         evaluationService.evaluateAccountWithdrawal(account, operation);
         evaluationService.evaluateFixedDepositDeposit(account, operation, invalid);
@@ -60,9 +60,10 @@ public class SixDigitTokenService {
         );
     }
 
-    public void evaluateSixDigitToken(String token, Long id, String operation) {
+    public List<Account> evaluateSixDigitToken(String token, Long id, String operation) {
         logger.info("Evaluate the account data");
-        Account account = securityService.evaluateIfPass(id);
+        List<Account> accounts = securityService.evaluateIfPass(id);
+        Account account = getAccount(accounts, id);
         TokenType tt = getterService.getTokenType(operation);
         OperationToken ot = operationTokenRepository.findByLastestToken(
             token, 
@@ -79,5 +80,11 @@ public class SixDigitTokenService {
         }
         ot.setIsUsed(true);
         operationTokenRepository.save(ot);
+        return accounts;
+    }
+
+    private Account getAccount(List<Account> accounts, Long id) {
+        for (Account account: accounts) if (account.getId() == id) return account;
+        return null;
     }
 }

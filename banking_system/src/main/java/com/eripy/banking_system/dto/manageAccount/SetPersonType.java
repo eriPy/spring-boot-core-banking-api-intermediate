@@ -8,7 +8,5 @@ public record SetPersonType(
     @Size(max = 6, min = 6, message = "The token must be 6 characters long")
     String token,
     @NotBlank(message = "The person type is required")
-    String personType,
-    @NotBlank(message = "The account type is required")
-    String accountType
+    String personType
 ) {}

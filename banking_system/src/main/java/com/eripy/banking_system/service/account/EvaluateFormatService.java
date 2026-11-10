@@ -1,18 +1,13 @@
 package com.eripy.banking_system.service.account;
 
 import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import com.eripy.banking_system.dto.account.AccountInformationResponse;
-import com.eripy.banking_system.entities.accounts.Account;
 import com.eripy.banking_system.entities.accounts.AccountsType;
 import com.eripy.banking_system.entities.accounts.PersonType;
-import com.eripy.banking_system.entities.accounts.User;
 import com.eripy.banking_system.exceptions.FormatDataException;
 
 @Service 
@@ -34,23 +29,6 @@ public class EvaluateFormatService {
         logger.info("Fetching data format");
         return types.stream()
             .anyMatch(type -> type.getPersonType().equals(personType));
-    }
-
-    public AccountInformationResponse getInformationFormat(User user, List<Account> accounts) {
-        List<Map<Long, String>> information = new ArrayList<>();
-        for (Account account: accounts) {
-            information.add(Map.of(account.getId(), account.getAccountType().getAccountType()));
-        }
-        String uncensoredIdCard = user.getIdCard();
-        String censoredIdCard = "********" + uncensoredIdCard.substring(uncensoredIdCard.length() - 2);
-        return new AccountInformationResponse(
-            user.getAccountHolder(),
-            user.getEmail(),
-            censoredIdCard,
-            user.getPersonType().getPersonType(),
-            user.getMonthlyEarnings(),
-            information
-        );
     }
 
     public void evaluateGeneralData(

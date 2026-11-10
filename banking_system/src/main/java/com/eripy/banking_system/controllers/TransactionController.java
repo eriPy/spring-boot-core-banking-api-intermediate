@@ -9,9 +9,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.eripy.banking_system.dto.transactions.DepositRequest;
+import com.eripy.banking_system.dto.transactions.TransferRequest;
 import com.eripy.banking_system.dto.transactions.WithdrawalRequest;
 import com.eripy.banking_system.service.account.SixDigitTokenService;
 import com.eripy.banking_system.service.transaction.DepositService;
+import com.eripy.banking_system.service.transaction.TransferService;
 import com.eripy.banking_system.service.transaction.WithdrawalService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -24,15 +26,18 @@ public class TransactionController {
     private final DepositService depositService;
     private final WithdrawalService withdrawalService;
     private final SixDigitTokenService sixDigitTokenService;
+    private final TransferService transferService;
 
     public TransactionController(
         DepositService depositService,
         WithdrawalService withdrawalService,
-        SixDigitTokenService sixDigitTokenService
+        SixDigitTokenService sixDigitTokenService,
+        TransferService transferService
     ) {
         this.depositService = depositService;
         this.withdrawalService = withdrawalService;
         this.sixDigitTokenService = sixDigitTokenService;
+        this.transferService = transferService;
     }
 
     @Operation(summary = """
@@ -43,7 +48,7 @@ public class TransactionController {
     @PostMapping("/deposit")
     public ResponseEntity<Map<String, String>> deposit(
         Authentication authentication,
-        @Valid 
+        @Valid
         @RequestBody
         DepositRequest request
     ) {
@@ -78,11 +83,25 @@ public class TransactionController {
         );
     }
 
+    @Operation(summary = """
+        First get the login's jwt, after get a six digit token for a sensitive operation and the controller
+        request the amount, the account card that request the transfer payment method and token of the operation 
+        and evaluate if all data is valid to process a transfer, evaluate if the account can process a transfer, if the    
+        account card is valid. 
+    """)
     @PostMapping("/transfer")
-    public void transfer(
-        Authentication authentication
+    public ResponseEntity<Map<String, String>> transfer(
+        Authentication authentication,
+        @Valid 
+        @RequestBody 
+        TransferRequest request
     ) {
         Long id = Long.parseLong(authentication.getName());
-        sixDigitTokenService.evaluateSixDigitToken(null, id, "transfer");
+        transferService.processTransfer(
+            id, request,
+            sixDigitTokenService.evaluateSixDigitToken(request.token(), id, "transfer"));
+        return ResponseEntity
+            .status(HttpStatus.CREATED)
+            .body(Map.of("Transfer", "succesful"));
     }
 }

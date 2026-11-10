@@ -4,10 +4,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.eripy.banking_system.entities.accounts.Account;
 import com.eripy.banking_system.entities.accounts.AccountStatus;
 import com.eripy.banking_system.entities.security.BlackList;
@@ -28,6 +28,7 @@ public class BotDetectionConsumer {
     private final EmailService emailService;
     private final SecurityService securityService;
     private final GetterService getterService;
+    private final RedisTemplate<String, String> redis;
     private static final Logger logger = LoggerFactory.getLogger(BotDetectionConsumer.class);
 
     public BotDetectionConsumer(
@@ -36,7 +37,8 @@ public class BotDetectionConsumer {
         BlackListRepository blackListRepository,
         EmailService emailService,
         SecurityService securityService,
-        GetterService getterService
+        GetterService getterService,
+        RedisTemplate<String, String> redis
     ) {
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
@@ -44,6 +46,7 @@ public class BotDetectionConsumer {
         this.emailService = emailService;
         this.securityService = securityService;
         this.getterService = getterService;
+        this.redis = redis;
     }
 
     @Transactional 
@@ -71,6 +74,8 @@ public class BotDetectionConsumer {
             accountRepository.save(account);
             blackListRepository.save(new BlackList(account.getUser())); 
             emailService.penalizationEmail(account, null, "ban", "use of bots");
+            redis.delete("user-" + account.getUser().getEmail());
+            return;
         }  
         logger.info("The user passed the bot test"); 
     } 

@@ -23,6 +23,7 @@ import com.eripy.banking_system.exceptions.InconsistenceDataException;
 import com.eripy.banking_system.exceptions.InvalidDateException;
 import com.eripy.banking_system.exceptions.InvalidQuantity;
 import com.eripy.banking_system.exceptions.ResourceNotFoundException;
+import com.eripy.banking_system.repositories.accounts.AccountRepository;
 import com.eripy.banking_system.repositories.accounts.UserRepository;
 import com.eripy.banking_system.service.GetterService;
 import tools.jackson.core.JacksonException;
@@ -44,6 +45,7 @@ public class AuthService {
     private final AccountService accountService;
     private final UserRepository userRepository;
     private final RecordService recordService;
+    private final AccountRepository accountRepository;
     private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
 
     @Value("${jwt.expiration}")
@@ -62,7 +64,8 @@ public class AuthService {
         SecurityService securityService,
         AccountService accountService,
         UserRepository userRepository,
-        RecordService recordService
+        RecordService recordService,
+        AccountRepository accountRepository
     ) {
         this.evaluationService = evaluationService;
         this.evaluateFormatService = evaluateFormatService;
@@ -77,6 +80,7 @@ public class AuthService {
         this.accountService = accountService;
         this.userRepository = userRepository;
         this.recordService = recordService;
+        this.accountRepository = accountRepository;
     }
 
     public void evaluateData(SignUpRequest request) {
@@ -159,7 +163,7 @@ public class AuthService {
             throw new FormatDataException("Invalid data");
         }
         User user = getterService.getUserFromDataBaseByEmail(request.email());
-        List<Account> data = getterService.getAccounts(user);
+        List<Account> data = accountRepository.findAvailableAccounts(user);
         for (Account account: data) accountService.unfreeze(account);
         String password = user.getPassword();
         if (!encoder.matches(request.password(), password)) {

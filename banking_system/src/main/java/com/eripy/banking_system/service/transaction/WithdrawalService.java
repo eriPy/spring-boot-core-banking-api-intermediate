@@ -11,6 +11,7 @@ import com.eripy.banking_system.entities.accounts.Account;
 import com.eripy.banking_system.entities.accounts.CheckingAccount;
 import com.eripy.banking_system.entities.accounts.FixedDepositAccount;
 import com.eripy.banking_system.entities.accounts.SavingsAccount;
+import com.eripy.banking_system.entities.accounts.User;
 import com.eripy.banking_system.entities.security.Overdraft;
 import com.eripy.banking_system.entities.transactions.FeeTransaction;
 import com.eripy.banking_system.entities.transactions.InterestAccrualTransaction;
@@ -75,7 +76,19 @@ public class WithdrawalService {
         logger.info("Evaluating the payment method");
         PaymentMethod pm = getterService.getPaymentMethod(request.paymentMethod());
         logger.info("Search the user");
-        Account account = getterService.getAccountFromDatabase(id);
+        Account accountReferences = getterService.getAccountFromDatabase(id);
+        User user = accountReferences.getUser();
+        boolean itsTheSame = accountReferences.getAccountType().getAccountType().equals(request.accountType());
+        Account account = itsTheSame ? accountReferences : getterService
+            .getAccountFromDatabaseForAccountType(user, request.accountType());
+        if (!accountReferences.getAccountType().getAccountType().equals(request.accountType())) {
+            account = accountRepository.findByUserAndAccountTypeAccountType(
+                user, request.accountType())
+                .orElseThrow(() -> {
+                    logger.warn("The account to process the transaction doesn't exists");
+                    throw new InconsistenceDataException("Invalid data request");
+                });
+        }
         securityService.evaluateStatus(account);
         String act = account.getAccountType().getAccountType();
         TransactionType tt = getterService.getTransactionType("withdrawal");

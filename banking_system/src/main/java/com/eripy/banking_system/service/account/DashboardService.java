@@ -33,6 +33,7 @@ public class DashboardService {
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
     private final ObjectMapper mapper;
+    private final SecurityService securityService;
     private static final Logger logger = LoggerFactory.getLogger(DashboardService.class);
 
     public DashboardService(
@@ -40,13 +41,15 @@ public class DashboardService {
         RedisTemplate<String, String> redis,
         AccountRepository accountRepository,
         TransactionRepository transactionRepository,
-        ObjectMapper mapper
+        ObjectMapper mapper,
+        SecurityService securityService
     ) {
         this.getterService = getterService;
         this.redis = redis;
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
         this.mapper = mapper;
+        this.securityService = securityService;
     }
     
     public boolean userHasDataInRedis(Long id) {return Boolean.TRUE.equals(redis.hasKey("user-" + id + "information"));}
@@ -54,20 +57,17 @@ public class DashboardService {
     private UserInformation isNotInRedis(Account account, User user, String key) {
         CheckingAccount checkingAccount = account.getCheckingAccount();
         FixedDepositAccount fixedDepositAccount = account.getFixedDepositAccount();
+        logger.info("Data that require a list");
         List<String> accountCards = new ArrayList<>();
         List<String> accountTypes = new ArrayList<>();
-        List<Account> accounts = List.of(account);
-        if (accountRepository.countByUser(user) > 1) {
-            accounts = accountRepository.findByUser(user);
-            for (Account account2: accounts) {
-                accountTypes.add(account2.getAccountType().getAccountType());
-                accountCards.add(account2.getAccountCard());
-            }
-        }
+        List<BigDecimal> balances = new ArrayList<>();
+        List<Account> accounts = accountRepository.findByUser(user);
         logger.info("Redacting account details");
-        for (int i = 0; i < accountCards.size(); i++) {
-            String current = accountCards.get(i);
-            accountCards.set(i, "********" + current.substring(current.length() - 4));
+        for (Account a: accounts) {
+            accountTypes.add(a.getAccountType().getAccountType());
+            String current = a.getAccountCard();
+            accountCards.add("********" + current.substring(current.length() - 4));
+            balances.add(a.getBalance());
         }
         List<UserTransactions> userTransactions = getMyTransactions(accounts);
         BigDecimal overdraftLimit = checkingAccount == null ? null : checkingAccount.getOverdraftLimit();
@@ -85,6 +85,7 @@ public class DashboardService {
             maturityDate,
             accountTypes,
             accountCards,
+            balances,
             userTransactions
         );
         Map<String, String> dashboardData = new HashMap<>();
@@ -98,6 +99,7 @@ public class DashboardService {
         dashboardData.put("maturity-date", maturityDate == null ? "" : maturityDate.toString());
         dashboardData.put("account-types", mapper.writeValueAsString(accountTypes));
         dashboardData.put("account-cards", mapper.writeValueAsString(accountCards));
+        dashboardData.put("user-balances", mapper.writeValueAsString(balances));
         dashboardData.put("user-transactions", mapper.writeValueAsString(userTransactions));
         redis.opsForHash().putAll(key, dashboardData);
         redis.expire(key, Duration.ofHours(12));
@@ -108,6 +110,7 @@ public class DashboardService {
         logger.info("Searching for the user account");
         Account account = getterService.getAccountFromDatabase(id);
         User user = account.getUser();
+        securityService.evaluateIfIsTheFirst(null, user);
         logger.info("Preparing the data format");
         String key = "user-" + account.getId() + "information";
         UserInformation userInformation = null;
@@ -116,13 +119,17 @@ public class DashboardService {
             if (valueInRedis == null) {
                 userInformation = isNotInRedis(account, user, key);
             } else {
+                logger.info("Data that might be null");
                 String overdraftLimitStr = (String) redis.opsForHash().get(key, "overdraft-limit");
                 String overdraftUsedStr = (String) redis.opsForHash().get(key, "overdraft-used");
                 String interesPayableStr = (String) redis.opsForHash().get(key, "interest-payable");
                 String maturityDateStr = (String) redis.opsForHash().get(key, "maturity-date");
+                logger.info("Preparing lists");
                 String accountTypes = (String) redis.opsForHash().get(key, "account-types");
                 String accountCards = (String) redis.opsForHash().get(key, "account-cards");
-                String userTransactions = (String) redis.opsForHash().get(key, "user-transactions");
+                String userTransactions = (String) redis.opsForHash().get(key, "user-transactions"); 
+                String balancesStr = (String) redis.opsForHash().get(key, "user-balances");
+                logger.info("Generathing the user information format");
                 userInformation = new UserInformation(
                     (String) redis.opsForHash().get(key, "holder"),
                     valueInRedis,
@@ -134,6 +141,7 @@ public class DashboardService {
                     maturityDateStr.isEmpty() ? null : LocalDateTime.parse(maturityDateStr),
                     mapper.readValue(accountTypes, new TypeReference<List<String>>() {}),
                     mapper.readValue(accountCards, new TypeReference<List<String>>() {}),
+                    mapper.readValue(balancesStr, new TypeReference<List<BigDecimal>>() {}),
                     mapper.readValue(userTransactions, new TypeReference<List<UserTransactions>>() {})
                 );
             }
@@ -183,7 +191,7 @@ public class DashboardService {
         );
     }
 
-    public void setMyInformationInRedis(Object value, String operation, Account account) {
+    public void setMyInformationInRedis(Object value, String operation, Account account, List<Account> accounts) {
         String key = "user-" + account.getId() + "information";
         switch (operation) {
             case "user-transactions":
@@ -197,10 +205,15 @@ public class DashboardService {
             case "account-cards":
             case "account-types":
                 String valueAsString = (String) redis.opsForHash().get(key, operation);
-                List<String> valueAsListOfString = mapper.readValue(
+                List<String> valueAsListFromString = mapper.readValue(
                     valueAsString, new TypeReference<List<String>>() {});
-                valueAsListOfString.add(((String) value));
-                redis.opsForHash().put(key, operation, mapper.writeValueAsString(valueAsListOfString));
+                valueAsListFromString.add(((String) value));
+                redis.opsForHash().put(key, operation, mapper.writeValueAsString(valueAsListFromString));
+                break;
+            case "user-balances":
+                List<BigDecimal> balances = List.of();
+                for (Account account2: accounts) balances.add(account2.getBalance());
+                redis.opsForHash().put(key, operation, mapper.writeValueAsString(balances));
                 break;
             default:
                 redis.opsForHash().put(key, operation, String.valueOf(value));

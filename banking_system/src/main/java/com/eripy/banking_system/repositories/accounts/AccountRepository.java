@@ -2,10 +2,10 @@ package com.eripy.banking_system.repositories.accounts;
 
 import java.util.List;
 import java.util.Optional;
-
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import com.eripy.banking_system.entities.accounts.Account;
+import com.eripy.banking_system.entities.accounts.AccountStatus;
 import com.eripy.banking_system.entities.accounts.User;
 
 public interface AccountRepository extends JpaRepository<Account, Long> {
@@ -17,4 +17,13 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     List<Account> findByUser(User user);
 
     long countByUser(User user);
+
+    List<Account> findByUserAndAccountStatus(User user, AccountStatus accountStatus);
+    default List<Account> findAvailableAccounts(User user) {
+        return findByUserAndAccountStatus(user, AccountStatus.active);
+    }
+
+    Optional<Account> findByUserAndAccountTypeAccountType(User user, String accountType);
+
+    Optional<Account> findByAccountCard(String accountCard);
 }

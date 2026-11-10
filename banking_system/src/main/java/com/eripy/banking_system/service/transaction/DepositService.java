@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.eripy.banking_system.dto.transactions.DepositRequest;
 import com.eripy.banking_system.entities.accounts.Account;
 import com.eripy.banking_system.entities.accounts.CheckingAccount;
+import com.eripy.banking_system.entities.accounts.User;
 import com.eripy.banking_system.entities.transactions.DepositTransaction;
 import com.eripy.banking_system.entities.transactions.PaymentMethod;
 import com.eripy.banking_system.entities.transactions.Transaction;
@@ -58,7 +59,11 @@ public class DepositService {
         logger.info("Evaluating payment method");
         PaymentMethod pm = getterService.getPaymentMethod(depositRequest.paymentMethod());
         logger.info("Search user");
-        Account account = getterService.getAccountFromDatabase(id);
+        Account accountReferences = getterService.getAccountFromDatabase(id);
+        User user = accountReferences.getUser();
+        boolean itsTheSame = accountReferences.getAccountType().getAccountType().equals(depositRequest.accountType());
+        Account account = itsTheSame ? accountReferences : getterService
+            .getAccountFromDatabaseForAccountType(user, depositRequest.accountType());
         logger.info("Evaluating the account status");
         securityService.evaluateStatus(account);
         if (account.getFixedDepositAccount() != null) {
@@ -132,7 +137,7 @@ public class DepositService {
                 "Interest charge", 
                 "The interest charge for $" + interestCharged + " has been made"
             );
-            return new DepositRequest(newAmount, request.token(), request.paymentMethod());
+            return new DepositRequest(newAmount, request.token(), request.paymentMethod(), request.accountType());
         }
         return request;
     }

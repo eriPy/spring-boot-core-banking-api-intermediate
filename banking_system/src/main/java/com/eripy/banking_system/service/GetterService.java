@@ -27,6 +27,7 @@ import com.eripy.banking_system.entities.security.PenalizedReason;
 import com.eripy.banking_system.entities.security.TokenType;
 import com.eripy.banking_system.entities.transactions.PaymentMethod;
 import com.eripy.banking_system.entities.transactions.TransactionType;
+import com.eripy.banking_system.exceptions.InconsistenceDataException;
 import com.eripy.banking_system.exceptions.ResourceNotFoundException;
 import com.eripy.banking_system.repositories.accounts.AccountRepository;
 import com.eripy.banking_system.repositories.accounts.AccountsTypeRepository;
@@ -153,6 +154,18 @@ public class GetterService {
         return accountRepository.findByUser(user);
     }
 
+    public List<Account> getAvailableAccountsFromDatabase(User user) {
+        return accountRepository.findAvailableAccounts(user);
+    }
+
+    public List<Account> getAvailableAccountsFromCache(User user) {
+        return getFromCache(
+            "user-" + user.getEmail(), 
+            "accounts", 
+            new TypeReference<List<Account>>() {}, 
+            () -> getAvailableAccountsFromCache(user));
+    }
+
     private PersonType getPersonTypeFromDatabase(String pt) {
         return getFromDatabase(() -> personTypeRepository.findByPersonType(pt), "Person type");
     }
@@ -219,6 +232,15 @@ public class GetterService {
 
     public Account getAccountFromDatabase(Long id) {
         return getFromDatabase(() -> accountRepository.findById(id), "Account");
+    }
+
+    public Account getAccountFromDatabaseForAccountType(User user, String accountType) {
+        return accountRepository.findByUserAndAccountTypeAccountType(
+            user, accountType)
+            .orElseThrow(() -> {
+                logger.warn("The account to process the transaction doesn't exists");
+                throw new InconsistenceDataException("Invalid data request");
+            });
     }
 
     public SavingsAccount getSavingsAccountFromDatabase(Long id) {

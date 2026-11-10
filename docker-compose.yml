@@ -1,7 +1,7 @@
 services:
   bank-backend:
     build:
-      context: ./bank
+      context: ./banking_system
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
@@ -86,7 +86,7 @@ services:
       - "5173:5173"
     environment:
       - VITE_API_URL=http://localhost:8080/api 
-    volumes:
+    volumes:  
       - ./bank_frontend/src:/bank-frontend/src
       - ./bank_frontend/public:/bank-frontend/public
       - ./bank_frontend/index.html:/bank-frontend/index.html

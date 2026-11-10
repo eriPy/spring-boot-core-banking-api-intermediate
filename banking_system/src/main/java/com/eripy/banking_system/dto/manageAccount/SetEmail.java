@@ -11,7 +11,5 @@ public record SetEmail(
     @Email(message = "Invalid email format")
     @NotBlank(message = "The email is required")
     @Size(max = 254, message = "The email cannot be more than 254 characters long")
-    String email,
-    @NotBlank(message = "The account type is required")
-    String accountType
+    String email
 ) {}

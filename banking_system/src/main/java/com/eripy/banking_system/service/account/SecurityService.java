@@ -1,13 +1,17 @@
 package com.eripy.banking_system.service.account;
 
 import java.time.Duration;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import com.eripy.banking_system.dto.account.SignUpRequest;
+import com.eripy.banking_system.dto.system.EvaluateIfTheFirstResponse;
 import com.eripy.banking_system.entities.accounts.Account;
 import com.eripy.banking_system.entities.accounts.AccountStatus;
+import com.eripy.banking_system.entities.accounts.User;
 import com.eripy.banking_system.exceptions.InconsistenceDataException;
 import com.eripy.banking_system.service.GetterService;
 
@@ -51,14 +55,28 @@ public class SecurityService {
         );
     }
 
-    public Account evaluateIfPass(Long id) {
+    public EvaluateIfTheFirstResponse evaluateIfIsTheFirst(Account account, User references) {
+        User user = account == null ? references : account.getUser();
+        List<Account> accounts = getterService.getAvailableAccountsFromCache(user);
+        return new EvaluateIfTheFirstResponse(
+            accounts.get(0).getId() != account.getId(),
+            accounts
+        );
+    }
+
+    public List<Account> evaluateIfPass(Long id) {
         Account account = getterService.getAccountFromDatabase(id);
+        EvaluateIfTheFirstResponse itf = evaluateIfIsTheFirst(account, null);
+        if (itf.res()) {
+            logger.info("This account doesn't the first user's account");
+            throw new InconsistenceDataException("Invalid data");
+        }
         evaluateStatus(account);
         String isBanned = redis.opsForValue().get("banned-account-" + account.getId());
         if (isBanned != null) {
             logger.warn("This account was banned");
             throw new InconsistenceDataException("Invalid data");
         }
-        return account;
+        return itf.accounts();
     }
 }

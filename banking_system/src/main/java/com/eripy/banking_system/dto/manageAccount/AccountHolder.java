@@ -8,7 +8,5 @@ public record AccountHolder(
     @Size(min = 6, max = 6, message = "The token must be 6 characters long")
     String token,
     @NotBlank(message = "The new account holder is required")
-    String accountHolder,
-    @NotBlank(message = "The account type is required")
-    String accountType
+    String accountHolder
 ) {}

@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +42,7 @@ public class FlaggedDetectionConsumer {
     private final BlackListRepository blackListRepository;
     private final SecurityService securityService;
     private final PenalizedAccountRepository penalizedAccountRepository;
+    private final RedisTemplate<String, String> redis;
     private static final Logger logger = LoggerFactory.getLogger(FlaggedDetectionConsumer.class);
     private static final BigDecimal THREE = new BigDecimal("3");
     private static final BigDecimal FOUR = new BigDecimal("4");
@@ -54,7 +56,8 @@ public class FlaggedDetectionConsumer {
         AccountRepository accountRepository,
         BlackListRepository blackListRepository,
         SecurityService securityService,
-        PenalizedAccountRepository penalizedAccountRepository
+        PenalizedAccountRepository penalizedAccountRepository,
+        RedisTemplate<String, String> redis
     ) {
         this.depositTransactionRepository = depositTransactionRepository;
         this.transferTransactionRepository = transferTransactionRepository;
@@ -65,6 +68,7 @@ public class FlaggedDetectionConsumer {
         this.blackListRepository = blackListRepository;
         this.securityService = securityService;
         this.penalizedAccountRepository = penalizedAccountRepository;
+        this.redis = redis;
     }
 
     @Transactional 
@@ -123,6 +127,7 @@ public class FlaggedDetectionConsumer {
             .getOrCreateAccountPenaltiesByFlagged(history, "Flagged history");
         apf.setSuspicions(apf.getSuspicions() + 1);
         securityService.saveInRedis(account);
+        redis.delete("user-" + account.getUser().getEmail());
         if (ban) {
             banUser(account, apf);
             return;

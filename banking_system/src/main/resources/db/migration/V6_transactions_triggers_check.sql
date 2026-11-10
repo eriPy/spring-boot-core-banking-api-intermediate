@@ -29,7 +29,7 @@ EXECUTE FUNCTION check_payment_method('cash', 'atm', 'bank_teller', 'check');
 CREATE TRIGGER trg_check_transfer
 BEFORE INSERT OR UPDATE OF payment_method_id ON transfer_transactions
 FOR EACH ROW
-EXECUTE FUNCTION check_payment_method('bank');
+EXECUTE FUNCTION check_payment_method('bank', "bank_teller", "atm");
 
 CREATE TRIGGER trg_check_fee
 BEFORE INSERT OR UPDATE OF payment_method_id ON fee_transactions
