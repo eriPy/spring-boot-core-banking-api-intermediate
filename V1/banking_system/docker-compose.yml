@@ -1,8 +1,6 @@
 services:
   bank-backend:
-    build:
-      context: ./banking_system
-      dockerfile: Dockerfile
+    build: .
     ports:
       - "8080:8080"
     environment:
@@ -15,8 +13,8 @@ services:
       SPRING_MAIL_HOST: ${MAIL_HOST}
       SPRING_MAIL_PORT: ${MAIL_PORT}
     volumes:
-      - ./banking_system/src/main/java:/bank/src/main/java
-      - ./banking_system/src/main/resources:/bank/src/main/resources
+      - ./src/main/java:/bank/src/main/java
+      - ./src/main/resources:/bank/src/main/resources
     depends_on:
       postgres:
         condition: service_healthy
@@ -78,19 +76,5 @@ services:
     ports:
       - "8025:8025"
       - "1025:1025"
-  bank-frontend:
-    build:
-      context: ./bank_frontend
-      dockerfile: Dockerfile
-    ports:
-      - "5173:5173"
-    environment:
-      - VITE_API_URL=http://localhost:8080/api 
-    volumes:  
-      - ./bank_frontend/src:/bank-frontend/src
-      - ./bank_frontend/public:/bank-frontend/public
-      - ./bank_frontend/index.html:/bank-frontend/index.html
-    depends_on:
-      - bank-backend
 volumes:
   bank-postgres-data:
